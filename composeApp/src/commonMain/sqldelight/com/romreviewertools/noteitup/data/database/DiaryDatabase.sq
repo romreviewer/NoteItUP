@@ -8,6 +8,10 @@ CREATE TABLE DiaryEntryEntity (
     folder_id TEXT,
     is_favorite INTEGER NOT NULL DEFAULT 0,
     mood TEXT,
+    latitude REAL,
+    longitude REAL,
+    location_address TEXT,
+    location_name TEXT,
     FOREIGN KEY (folder_id) REFERENCES FolderEntity(id) ON DELETE SET NULL
 );
 
@@ -39,11 +43,23 @@ CREATE TABLE EntryTagEntity (
     FOREIGN KEY (tag_id) REFERENCES TagEntity(id) ON DELETE CASCADE
 );
 
+-- Image attachments table
+CREATE TABLE ImageAttachmentEntity (
+    id TEXT PRIMARY KEY NOT NULL,
+    entry_id TEXT NOT NULL,
+    file_name TEXT NOT NULL,
+    file_path TEXT NOT NULL,
+    thumbnail_path TEXT,
+    created_at INTEGER NOT NULL,
+    FOREIGN KEY (entry_id) REFERENCES DiaryEntryEntity(id) ON DELETE CASCADE
+);
+
 -- Indexes for performance
 CREATE INDEX idx_entry_created_at ON DiaryEntryEntity(created_at DESC);
 CREATE INDEX idx_entry_folder ON DiaryEntryEntity(folder_id);
 CREATE INDEX idx_entry_favorite ON DiaryEntryEntity(is_favorite);
 CREATE INDEX idx_tag_name ON TagEntity(name);
+CREATE INDEX idx_image_entry ON ImageAttachmentEntity(entry_id);
 
 -- DiaryEntry Queries
 getAllEntries:
@@ -72,12 +88,12 @@ WHERE title LIKE '%' || ? || '%' OR content LIKE '%' || ? || '%'
 ORDER BY created_at DESC;
 
 insertEntry:
-INSERT OR REPLACE INTO DiaryEntryEntity(id, title, content, created_at, updated_at, folder_id, is_favorite, mood)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+INSERT OR REPLACE INTO DiaryEntryEntity(id, title, content, created_at, updated_at, folder_id, is_favorite, mood, latitude, longitude, location_address, location_name)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 updateEntry:
 UPDATE DiaryEntryEntity
-SET title = ?, content = ?, updated_at = ?, folder_id = ?, is_favorite = ?, mood = ?
+SET title = ?, content = ?, updated_at = ?, folder_id = ?, is_favorite = ?, mood = ?, latitude = ?, longitude = ?, location_address = ?, location_name = ?
 WHERE id = ?;
 
 deleteEntry:
@@ -170,3 +186,23 @@ SELECT created_at FROM DiaryEntryEntity ORDER BY created_at DESC;
 
 getTotalContentLength:
 SELECT SUM(LENGTH(content)) FROM DiaryEntryEntity;
+
+-- Image Attachment Queries
+getImagesForEntry:
+SELECT * FROM ImageAttachmentEntity WHERE entry_id = ? ORDER BY created_at ASC;
+
+getImageById:
+SELECT * FROM ImageAttachmentEntity WHERE id = ?;
+
+insertImage:
+INSERT OR REPLACE INTO ImageAttachmentEntity(id, entry_id, file_name, file_path, thumbnail_path, created_at)
+VALUES (?, ?, ?, ?, ?, ?);
+
+deleteImage:
+DELETE FROM ImageAttachmentEntity WHERE id = ?;
+
+deleteImagesForEntry:
+DELETE FROM ImageAttachmentEntity WHERE entry_id = ?;
+
+getImageCount:
+SELECT COUNT(*) FROM ImageAttachmentEntity WHERE entry_id = ?;

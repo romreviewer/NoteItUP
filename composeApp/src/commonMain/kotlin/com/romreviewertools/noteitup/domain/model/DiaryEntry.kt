@@ -11,5 +11,7 @@ data class DiaryEntry(
     val folderId: String? = null,
     val tags: List<Tag> = emptyList(),
     val isFavorite: Boolean = false,
-    val mood: Mood? = null
+    val mood: Mood? = null,
+    val images: List<ImageAttachment> = emptyList(),
+    val location: Location? = null
 )

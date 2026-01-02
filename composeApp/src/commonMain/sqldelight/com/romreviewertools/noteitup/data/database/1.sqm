@@ -1,0 +1,20 @@
+-- Migration from version 1 to version 2
+-- Add location columns to DiaryEntryEntity
+ALTER TABLE DiaryEntryEntity ADD COLUMN latitude REAL;
+ALTER TABLE DiaryEntryEntity ADD COLUMN longitude REAL;
+ALTER TABLE DiaryEntryEntity ADD COLUMN location_address TEXT;
+ALTER TABLE DiaryEntryEntity ADD COLUMN location_name TEXT;
+
+-- Create ImageAttachmentEntity table
+CREATE TABLE IF NOT EXISTS ImageAttachmentEntity (
+    id TEXT PRIMARY KEY NOT NULL,
+    entry_id TEXT NOT NULL,
+    file_name TEXT NOT NULL,
+    file_path TEXT NOT NULL,
+    thumbnail_path TEXT,
+    created_at INTEGER NOT NULL,
+    FOREIGN KEY (entry_id) REFERENCES DiaryEntryEntity(id) ON DELETE CASCADE
+);
+
+-- Create index for image attachments
+CREATE INDEX IF NOT EXISTS idx_image_entry ON ImageAttachmentEntity(entry_id);

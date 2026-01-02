@@ -29,6 +29,9 @@ multiplatform-markdown = "0.31.0"
 ktor = "3.0.3"
 okio = "3.9.1"
 
+# Location
+play-services-location = "21.3.0"
+
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlin-testJunit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
@@ -80,6 +83,9 @@ ktor-client-java = { module = "io.ktor:ktor-client-java", version.ref = "ktor" }
 
 # ZIP/IO
 okio = { module = "com.squareup.okio:okio", version.ref = "okio" }
+
+# Location
+play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "play-services-location" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

@@ -12,4 +12,15 @@ sealed interface EditorIntent {
     data object ToggleFavorite : EditorIntent
     data object Save : EditorIntent
     data object DismissError : EditorIntent
+
+    // Image intents
+    data object PickImageFromGallery : EditorIntent
+    data object TakePhoto : EditorIntent
+    data class AddImageFromPath(val filePath: String) : EditorIntent
+    data class RemoveImage(val imageId: String) : EditorIntent
+    data object CancelImagePicking : EditorIntent
+
+    // Location intents
+    data object AddLocation : EditorIntent
+    data object RemoveLocation : EditorIntent
 }

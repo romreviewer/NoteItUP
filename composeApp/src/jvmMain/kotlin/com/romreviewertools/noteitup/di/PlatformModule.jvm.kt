@@ -5,6 +5,8 @@ import com.romreviewertools.noteitup.data.database.DriverFactory
 import com.romreviewertools.noteitup.data.encryption.EncryptionService
 import com.romreviewertools.noteitup.data.export.FileExporter
 import com.romreviewertools.noteitup.data.export.FileImporter
+import com.romreviewertools.noteitup.data.location.LocationService
+import com.romreviewertools.noteitup.data.media.ImagePicker
 import com.romreviewertools.noteitup.data.notification.NotificationManager
 import com.romreviewertools.noteitup.data.security.BiometricAuthenticator
 import com.romreviewertools.noteitup.data.preferences.PreferencesStorage
@@ -24,6 +26,8 @@ val jvmModule = module {
     single { BiometricAuthenticator() }
     single { OAuthHandler() }
     single { EncryptionService() }
+    single { ImagePicker() }
+    single { LocationService() }
     single {
         HttpClient(Java) {
             install(ContentNegotiation) {

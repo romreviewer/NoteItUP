@@ -46,6 +46,9 @@ kotlin {
 
             // Ktor Android engine
             implementation(libs.ktor.client.okhttp)
+
+            // Location services
+            implementation(libs.play.services.location)
         }
         commonMain.dependencies {
             implementation(compose.runtime)

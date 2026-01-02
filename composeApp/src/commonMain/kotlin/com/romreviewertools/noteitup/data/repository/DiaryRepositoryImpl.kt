@@ -9,6 +9,7 @@ import com.romreviewertools.noteitup.domain.model.DetailedStats
 import com.romreviewertools.noteitup.domain.model.DiaryEntry
 import com.romreviewertools.noteitup.domain.model.DiaryStats
 import com.romreviewertools.noteitup.domain.model.Folder
+import com.romreviewertools.noteitup.domain.model.ImageAttachment
 import com.romreviewertools.noteitup.domain.model.MonthlyEntryCount
 import com.romreviewertools.noteitup.domain.model.Mood
 import com.romreviewertools.noteitup.domain.model.Tag
@@ -79,7 +80,11 @@ class DiaryRepositoryImpl(
                 updated_at = entry.updatedAt.toEpochMilliseconds(),
                 folder_id = entry.folderId,
                 is_favorite = if (entry.isFavorite) 1L else 0L,
-                mood = entry.mood?.name
+                mood = entry.mood?.name,
+                latitude = entry.location?.latitude,
+                longitude = entry.location?.longitude,
+                location_address = entry.location?.address,
+                location_name = entry.location?.placeName
             )
             entry
         }
@@ -94,6 +99,10 @@ class DiaryRepositoryImpl(
                 folder_id = entry.folderId,
                 is_favorite = if (entry.isFavorite) 1L else 0L,
                 mood = entry.mood?.name,
+                latitude = entry.location?.latitude,
+                longitude = entry.location?.longitude,
+                location_address = entry.location?.address,
+                location_name = entry.location?.placeName,
                 id = entry.id
             )
             entry
@@ -317,6 +326,51 @@ class DiaryRepositoryImpl(
             writingDays = writingDays,
             favoriteCount = favoriteCount
         )
+    }
+
+    // Image operations
+    override suspend fun getImagesForEntry(entryId: String): List<ImageAttachment> =
+        withContext(Dispatchers.IO) {
+            queries.getImagesForEntry(entryId)
+                .executeAsList()
+                .map { entity ->
+                    ImageAttachment(
+                        id = entity.id,
+                        fileName = entity.file_name,
+                        filePath = entity.file_path,
+                        thumbnailPath = entity.thumbnail_path,
+                        createdAt = kotlinx.datetime.Instant.fromEpochMilliseconds(entity.created_at)
+                    )
+                }
+        }
+
+    override suspend fun addImageToEntry(
+        entryId: String,
+        image: ImageAttachment
+    ): Result<ImageAttachment> = runCatching {
+        withContext(Dispatchers.IO) {
+            queries.insertImage(
+                id = image.id,
+                entry_id = entryId,
+                file_name = image.fileName,
+                file_path = image.filePath,
+                thumbnail_path = image.thumbnailPath,
+                created_at = image.createdAt.toEpochMilliseconds()
+            )
+            image
+        }
+    }
+
+    override suspend fun removeImageFromEntry(imageId: String): Result<Unit> = runCatching {
+        withContext(Dispatchers.IO) {
+            queries.deleteImage(imageId)
+        }
+    }
+
+    override suspend fun deleteAllImagesForEntry(entryId: String): Result<Unit> = runCatching {
+        withContext(Dispatchers.IO) {
+            queries.deleteImagesForEntry(entryId)
+        }
     }
 
     private fun calculateStreaks(sortedDates: List<kotlinx.datetime.LocalDate>): Pair<Int, Int> {

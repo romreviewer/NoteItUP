@@ -4,6 +4,7 @@ import com.romreviewertools.noteitup.domain.model.DetailedStats
 import com.romreviewertools.noteitup.domain.model.DiaryEntry
 import com.romreviewertools.noteitup.domain.model.DiaryStats
 import com.romreviewertools.noteitup.domain.model.Folder
+import com.romreviewertools.noteitup.domain.model.ImageAttachment
 import com.romreviewertools.noteitup.domain.model.Tag
 import kotlinx.coroutines.flow.Flow
 import kotlin.time.Instant
@@ -32,6 +33,12 @@ interface DiaryRepository {
     suspend fun createFolder(folder: Folder): Result<Folder>
     suspend fun deleteFolder(id: String): Result<Unit>
     fun getEntriesByFolder(folderId: String): Flow<List<DiaryEntry>>
+
+    // Image operations
+    suspend fun getImagesForEntry(entryId: String): List<ImageAttachment>
+    suspend fun addImageToEntry(entryId: String, image: ImageAttachment): Result<ImageAttachment>
+    suspend fun removeImageFromEntry(imageId: String): Result<Unit>
+    suspend fun deleteAllImagesForEntry(entryId: String): Result<Unit>
 
     // Stats
     fun getStats(): Flow<DiaryStats>
