@@ -1,0 +1,172 @@
+-- DiaryEntry table
+CREATE TABLE DiaryEntryEntity (
+    id TEXT PRIMARY KEY NOT NULL,
+    title TEXT NOT NULL,
+    content TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    folder_id TEXT,
+    is_favorite INTEGER NOT NULL DEFAULT 0,
+    mood TEXT,
+    FOREIGN KEY (folder_id) REFERENCES FolderEntity(id) ON DELETE SET NULL
+);
+
+-- Folder table
+CREATE TABLE FolderEntity (
+    id TEXT PRIMARY KEY NOT NULL,
+    name TEXT NOT NULL,
+    color INTEGER,
+    icon TEXT,
+    parent_id TEXT,
+    created_at INTEGER NOT NULL,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (parent_id) REFERENCES FolderEntity(id) ON DELETE SET NULL
+);
+
+-- Tag table
+CREATE TABLE TagEntity (
+    id TEXT PRIMARY KEY NOT NULL,
+    name TEXT NOT NULL UNIQUE,
+    color INTEGER
+);
+
+-- Junction table for many-to-many relationship
+CREATE TABLE EntryTagEntity (
+    entry_id TEXT NOT NULL,
+    tag_id TEXT NOT NULL,
+    PRIMARY KEY (entry_id, tag_id),
+    FOREIGN KEY (entry_id) REFERENCES DiaryEntryEntity(id) ON DELETE CASCADE,
+    FOREIGN KEY (tag_id) REFERENCES TagEntity(id) ON DELETE CASCADE
+);
+
+-- Indexes for performance
+CREATE INDEX idx_entry_created_at ON DiaryEntryEntity(created_at DESC);
+CREATE INDEX idx_entry_folder ON DiaryEntryEntity(folder_id);
+CREATE INDEX idx_entry_favorite ON DiaryEntryEntity(is_favorite);
+CREATE INDEX idx_tag_name ON TagEntity(name);
+
+-- DiaryEntry Queries
+getAllEntries:
+SELECT * FROM DiaryEntryEntity ORDER BY created_at DESC;
+
+getEntryById:
+SELECT * FROM DiaryEntryEntity WHERE id = ?;
+
+getEntriesByFolder:
+SELECT * FROM DiaryEntryEntity WHERE folder_id = ? ORDER BY created_at DESC;
+
+getFavoriteEntries:
+SELECT * FROM DiaryEntryEntity WHERE is_favorite = 1 ORDER BY created_at DESC;
+
+getEntriesByDateRange:
+SELECT * FROM DiaryEntryEntity
+WHERE created_at >= ? AND created_at <= ?
+ORDER BY created_at DESC;
+
+getRecentEntries:
+SELECT * FROM DiaryEntryEntity ORDER BY created_at DESC LIMIT ?;
+
+searchEntries:
+SELECT * FROM DiaryEntryEntity
+WHERE title LIKE '%' || ? || '%' OR content LIKE '%' || ? || '%'
+ORDER BY created_at DESC;
+
+insertEntry:
+INSERT OR REPLACE INTO DiaryEntryEntity(id, title, content, created_at, updated_at, folder_id, is_favorite, mood)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+
+updateEntry:
+UPDATE DiaryEntryEntity
+SET title = ?, content = ?, updated_at = ?, folder_id = ?, is_favorite = ?, mood = ?
+WHERE id = ?;
+
+deleteEntry:
+DELETE FROM DiaryEntryEntity WHERE id = ?;
+
+toggleFavorite:
+UPDATE DiaryEntryEntity SET is_favorite = CASE WHEN is_favorite = 1 THEN 0 ELSE 1 END, updated_at = ? WHERE id = ?;
+
+-- Stats queries
+getTotalEntryCount:
+SELECT COUNT(*) FROM DiaryEntryEntity;
+
+getFavoriteCount:
+SELECT COUNT(*) FROM DiaryEntryEntity WHERE is_favorite = 1;
+
+getTagCount:
+SELECT COUNT(*) FROM TagEntity;
+
+getStreakDays:
+SELECT COUNT(DISTINCT date(created_at / 1000, 'unixepoch'))
+FROM DiaryEntryEntity
+WHERE created_at >= ?;
+
+-- Tag Queries
+getAllTags:
+SELECT * FROM TagEntity ORDER BY name;
+
+getTagById:
+SELECT * FROM TagEntity WHERE id = ?;
+
+insertTag:
+INSERT OR REPLACE INTO TagEntity(id, name, color) VALUES (?, ?, ?);
+
+deleteTag:
+DELETE FROM TagEntity WHERE id = ?;
+
+-- Entry-Tag Junction Queries
+getTagsForEntry:
+SELECT TagEntity.* FROM TagEntity
+INNER JOIN EntryTagEntity ON TagEntity.id = EntryTagEntity.tag_id
+WHERE EntryTagEntity.entry_id = ?;
+
+getEntriesForTag:
+SELECT DiaryEntryEntity.* FROM DiaryEntryEntity
+INNER JOIN EntryTagEntity ON DiaryEntryEntity.id = EntryTagEntity.entry_id
+WHERE EntryTagEntity.tag_id = ?
+ORDER BY DiaryEntryEntity.created_at DESC;
+
+addTagToEntry:
+INSERT OR IGNORE INTO EntryTagEntity(entry_id, tag_id) VALUES (?, ?);
+
+removeTagFromEntry:
+DELETE FROM EntryTagEntity WHERE entry_id = ? AND tag_id = ?;
+
+removeAllTagsFromEntry:
+DELETE FROM EntryTagEntity WHERE entry_id = ?;
+
+-- Folder Queries
+getAllFolders:
+SELECT * FROM FolderEntity ORDER BY sort_order, name;
+
+getFolderById:
+SELECT * FROM FolderEntity WHERE id = ?;
+
+insertFolder:
+INSERT OR REPLACE INTO FolderEntity(id, name, color, icon, parent_id, created_at, sort_order)
+VALUES (?, ?, ?, ?, ?, ?, ?);
+
+deleteFolder:
+DELETE FROM FolderEntity WHERE id = ?;
+
+-- Analytics queries
+getMoodDistribution:
+SELECT mood, COUNT(*) AS count FROM DiaryEntryEntity
+WHERE mood IS NOT NULL
+GROUP BY mood;
+
+getEntriesByMonth:
+SELECT strftime('%Y-%m', created_at / 1000, 'unixepoch') AS year_month, COUNT(*) AS count
+FROM DiaryEntryEntity
+GROUP BY year_month
+ORDER BY year_month DESC
+LIMIT 12;
+
+getWritingDaysCount:
+SELECT COUNT(DISTINCT date(created_at / 1000, 'unixepoch')) FROM DiaryEntryEntity;
+
+getAllEntriesCreatedAt:
+SELECT created_at FROM DiaryEntryEntity ORDER BY created_at DESC;
+
+getTotalContentLength:
+SELECT SUM(LENGTH(content)) FROM DiaryEntryEntity;
