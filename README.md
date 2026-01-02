@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="screenshots/app_icon.png" width="120" alt="NoteItUP App Icon"/>
+</p>
+
 # NoteItUP - Personal Diary App
 
 A modern, feature-rich personal diary application built with **Kotlin Multiplatform** and **Compose Multiplatform**, targeting Android, iOS, and Desktop (JVM).
@@ -5,9 +9,10 @@ A modern, feature-rich personal diary application built with **Kotlin Multiplatf
 ## Screenshots
 
 <p align="center">
-  <img src="screenshots/home_screen.png" width="250" alt="Home Screen"/>
-  <img src="screenshots/editor_screen.png" width="250" alt="Editor Screen"/>
-  <img src="screenshots/calendar_screen.png" width="250" alt="Calendar Screen"/>
+  <img src="screenshots/home_screen.png" width="200" alt="Home Screen"/>
+  <img src="screenshots/editor_screen.png" width="200" alt="Editor Screen"/>
+  <img src="screenshots/calendar_screen.png" width="200" alt="Calendar Screen"/>
+  <img src="screenshots/settings_screen.png" width="200" alt="Settings Screen"/>
 </p>
 
 ## Features
