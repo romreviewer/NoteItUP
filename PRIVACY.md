@@ -99,11 +99,12 @@ We take security seriously:
 NoteItUP requests the following permissions to provide its features. All permissions are optional except storage (required for core functionality):
 
 ### **Storage / Files**
-- **Permission**: Read/Write External Storage (Android 12 and below), Read Media Images (Android 13+)
-- **Why We Need It**: To save and load your diary entries, photos, and backup files
-- **When Used**: Continuously for app functionality
-- **Optional**: ❌ Required for app to function
-- **Can Be Revoked**: No (app won't work without it)
+- **Permission**: Read External Storage (Android 12 and below only)
+- **Why We Need It**: To read photos you select from the gallery on older Android versions (12 and below)
+- **When Used**: Only when you select photos to attach to diary entries
+- **Optional**: ✅ Yes (you can still use the app without attaching photos)
+- **Can Be Revoked**: Yes (photo attachment will not work on Android 12 and below)
+- **Privacy Note**: On Android 13+, we use the privacy-friendly Photo Picker which doesn't require any storage permission. Selected photos are immediately copied to the app's private storage.
 
 ### **Camera** 📷
 - **Permission**: CAMERA
