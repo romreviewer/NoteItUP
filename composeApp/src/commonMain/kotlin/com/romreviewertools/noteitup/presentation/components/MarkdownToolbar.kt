@@ -280,14 +280,31 @@ private fun insertAtLineStart(
     val text = textFieldValue.text
     val selection = textFieldValue.selection
 
-    // Find the start of the current line
-    val lineStart = text.lastIndexOf('\n', selection.min - 1) + 1
+    return if (selection.collapsed) {
+        // No selection - insert prefix at cursor position only
+        val newText = text.substring(0, selection.min) + prefix + text.substring(selection.min)
+        TextFieldValue(
+            text = newText,
+            selection = TextRange(selection.min + prefix.length)
+        )
+    } else {
+        // Text is selected - apply prefix to each line in selection
+        val selectedText = text.substring(selection.min, selection.max)
+        val lines = selectedText.split("\n")
+        val formattedLines = lines.joinToString("\n") { line ->
+            if (line.isNotBlank()) prefix + line else line
+        }
 
-    val newText = text.substring(0, lineStart) + prefix + text.substring(lineStart)
-    val newCursorPos = selection.min + prefix.length
+        val newText = text.substring(0, selection.min) +
+                formattedLines +
+                text.substring(selection.max)
 
-    return TextFieldValue(
-        text = newText,
-        selection = TextRange(newCursorPos)
-    )
+        TextFieldValue(
+            text = newText,
+            selection = TextRange(
+                selection.min,
+                selection.min + formattedLines.length
+            )
+        )
+    }
 }
