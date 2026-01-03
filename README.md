@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="screenshots/app_icon.png" width="120" alt="NoteItUP App Icon"/>
+  <img src="composeApp/src/androidMain/ic_launcher-playstore.png" width="120" alt="NoteItUP App Icon"/>
 </p>
 
 # NoteItUP - Personal Diary App
