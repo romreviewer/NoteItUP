@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!-- Internet permission for Cloud Sync -->
     <uses-permission android:name="android.permission.INTERNET" />
@@ -19,10 +18,6 @@
     <!-- Storage permissions for images (Android 12 and below) -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
-
-    <!-- Explicitly remove READ_MEDIA_IMAGES that may be added by dependencies -->
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" tools:node="remove" />
-    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" tools:node="remove" />
 
     <!-- Optional: Camera feature declaration -->
     <uses-feature android:name="android.hardware.camera" android:required="false" />
