@@ -27,6 +27,7 @@ import com.romreviewertools.noteitup.presentation.screens.statistics.StatisticsS
 import com.romreviewertools.noteitup.presentation.screens.statistics.StatisticsViewModel
 import com.romreviewertools.noteitup.presentation.screens.tags.TagsScreen
 import com.romreviewertools.noteitup.presentation.screens.tags.TagsViewModel
+import com.romreviewertools.noteitup.presentation.screens.security.SecurityIntent
 import com.romreviewertools.noteitup.presentation.screens.security.SecuritySettingsScreen
 import com.romreviewertools.noteitup.presentation.screens.security.SecurityViewModel
 import com.romreviewertools.noteitup.presentation.screens.cloudsync.CloudSyncScreen
@@ -78,6 +79,9 @@ fun AppNavigation(
                 },
                 onSecurityClick = {
                     navController.navigate(Routes.Security)
+                },
+                onCloudSyncClick = {
+                    navController.navigate(Routes.CloudSync)
                 }
             )
         }
@@ -208,7 +212,9 @@ fun AppNavigation(
                     navController.popBackStack()
                 },
                 onBiometricSetup = {
-                    // Platform-specific biometric setup will be handled here
+                    // Authenticate with biometric first, then enable it
+                    viewModel.authenticateWithBiometric()
+                    viewModel.processIntent(SecurityIntent.SetBiometricEnabled(true))
                 }
             )
         }

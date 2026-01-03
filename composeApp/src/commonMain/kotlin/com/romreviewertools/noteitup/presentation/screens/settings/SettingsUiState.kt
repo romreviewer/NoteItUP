@@ -10,5 +10,7 @@ data class SettingsUiState(
     val accentColor: AccentColor = AccentColor.DEFAULT,
     val fontSize: FontSize = FontSize.MEDIUM,
     val reminderSettings: ReminderSettings = ReminderSettings(),
-    val isLoading: Boolean = true
+    val isLoading: Boolean = true,
+    val showNotificationPermissionDialog: Boolean = false,
+    val notificationPermissionDenied: Boolean = false
 )

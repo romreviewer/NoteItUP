@@ -1,5 +1,6 @@
 package com.romreviewertools.noteitup.di
 
+import com.romreviewertools.noteitup.config.ApiKeys
 import com.romreviewertools.noteitup.data.cloud.CloudProvider
 import com.romreviewertools.noteitup.data.cloud.CloudProviderType
 import com.romreviewertools.noteitup.data.cloud.CloudSyncManager
@@ -89,15 +90,14 @@ val cloudModule = module {
         )
     }
 
-    // Cloud providers - using placeholder credentials (should be replaced with actual values)
-    // In production, these should come from BuildConfig or secure storage
+    // Cloud providers - credentials loaded from ApiKeys.kt (gitignored)
     single<CloudProvider>(named("googleDrive")) {
         GoogleDriveProvider(
             httpClient = get(),
             cloudSyncRepository = get(),
             oAuthHandler = get(),
-            clientId = "YOUR_GOOGLE_CLIENT_ID",
-            clientSecret = "YOUR_GOOGLE_CLIENT_SECRET"
+            clientId = ApiKeys.GOOGLE_CLIENT_ID,
+            clientSecret = ApiKeys.GOOGLE_CLIENT_SECRET
         )
     }
 
@@ -106,8 +106,8 @@ val cloudModule = module {
             httpClient = get(),
             cloudSyncRepository = get(),
             oAuthHandler = get(),
-            appKey = "YOUR_DROPBOX_APP_KEY",
-            appSecret = "YOUR_DROPBOX_APP_SECRET"
+            appKey = ApiKeys.DROPBOX_APP_KEY,
+            appSecret = ApiKeys.DROPBOX_APP_SECRET
         )
     }
 

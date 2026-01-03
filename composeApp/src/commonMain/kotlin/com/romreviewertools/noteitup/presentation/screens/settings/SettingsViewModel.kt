@@ -54,7 +54,13 @@ class SettingsViewModel(
             is SettingsIntent.ChangeFontSize -> updateFontSize(intent.size)
             is SettingsIntent.ToggleReminder -> toggleReminder(intent.enabled)
             is SettingsIntent.ChangeReminderTime -> changeReminderTime(intent.time)
+            is SettingsIntent.DismissPermissionDialog -> dismissPermissionDialog()
+            is SettingsIntent.OnNotificationPermissionResult -> handlePermissionResult(intent.granted)
         }
+    }
+
+    fun needsNotificationPermission(): Boolean {
+        return !notificationManager.hasPermission()
     }
 
     private fun updateThemeMode(mode: com.romreviewertools.noteitup.domain.model.ThemeMode) {
@@ -77,6 +83,12 @@ class SettingsViewModel(
 
     private fun toggleReminder(enabled: Boolean) {
         viewModelScope.launch {
+            if (enabled && !notificationManager.hasPermission()) {
+                // Need to request permission first
+                _uiState.update { it.copy(showNotificationPermissionDialog = true) }
+                return@launch
+            }
+
             val currentSettings = _uiState.value.reminderSettings
             val newSettings = currentSettings.copy(enabled = enabled)
             preferencesRepository.updateReminderSettings(newSettings)
@@ -85,6 +97,27 @@ class SettingsViewModel(
                 notificationManager.scheduleReminder(newSettings)
             } else {
                 notificationManager.cancelReminder()
+            }
+        }
+    }
+
+    private fun dismissPermissionDialog() {
+        _uiState.update { it.copy(showNotificationPermissionDialog = false) }
+    }
+
+    private fun handlePermissionResult(granted: Boolean) {
+        _uiState.update { it.copy(
+            showNotificationPermissionDialog = false,
+            notificationPermissionDenied = !granted
+        ) }
+
+        if (granted) {
+            // Permission granted, now enable reminders
+            viewModelScope.launch {
+                val currentSettings = _uiState.value.reminderSettings
+                val newSettings = currentSettings.copy(enabled = true)
+                preferencesRepository.updateReminderSettings(newSettings)
+                notificationManager.scheduleReminder(newSettings)
             }
         }
     }

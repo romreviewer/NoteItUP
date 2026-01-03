@@ -74,6 +74,7 @@ google-services.json
 GoogleService-Info.plist
 secrets.properties
 apikeys.properties
+**/config/ApiKeys.kt
 
 # Environment files
 .env

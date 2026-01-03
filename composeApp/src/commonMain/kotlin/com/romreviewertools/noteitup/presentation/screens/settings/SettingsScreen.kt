@@ -201,6 +201,37 @@ fun SettingsContent(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
+    // Permission launcher for notifications
+    val requestNotificationPermission = rememberNotificationPermissionLauncher { granted ->
+        viewModel.processIntent(SettingsIntent.OnNotificationPermissionResult(granted))
+    }
+
+    // Notification permission dialog
+    if (uiState.showNotificationPermissionDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                viewModel.processIntent(SettingsIntent.DismissPermissionDialog)
+            },
+            title = { Text("Notification Permission Required") },
+            text = { Text("To receive daily reminders, please allow notifications for this app.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.processIntent(SettingsIntent.DismissPermissionDialog)
+                    requestNotificationPermission()
+                }) {
+                    Text("Grant Permission")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    viewModel.processIntent(SettingsIntent.DismissPermissionDialog)
+                }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
     if (uiState.isLoading) {
         Box(
             modifier = Modifier

@@ -3,6 +3,7 @@ package com.romreviewertools.noteitup.data.cloud
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import com.romreviewertools.noteitup.BuildConfig
 
 /**
  * Android OAuth handler using system browser.
@@ -19,8 +20,9 @@ actual class OAuthHandler(private val context: Context) {
 
     actual fun getRedirectUri(provider: CloudProviderType): String {
         return when (provider) {
-            CloudProviderType.GOOGLE_DRIVE -> "com.romreviewertools.noteitup:/oauth2callback"
-            CloudProviderType.DROPBOX -> "com.romreviewertools.noteitup:/oauth2callback/dropbox"
+            CloudProviderType.GOOGLE_DRIVE -> "com.romreviewertools.noteitup://oauth2callback"
+            // Dropbox OAuth - using db-APP_KEY format (key from BuildConfig)
+            CloudProviderType.DROPBOX -> "db-${BuildConfig.DROPBOX_APP_KEY}://2/token"
         }
     }
 }

@@ -14,6 +14,10 @@ data class CloudSyncUiState(
     val googleDriveConnected: Boolean = false,
     val dropboxConnected: Boolean = false,
 
+    // Authentication in progress
+    val isAuthenticating: Boolean = false,
+    val authenticatingProvider: CloudProviderType? = null,
+
     // Sync settings
     val autoSyncEnabled: Boolean = false,
     val autoSyncInterval: AutoSyncInterval = AutoSyncInterval.HOURLY,

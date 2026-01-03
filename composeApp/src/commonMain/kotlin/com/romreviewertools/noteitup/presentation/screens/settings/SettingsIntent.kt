@@ -11,4 +11,8 @@ sealed interface SettingsIntent {
     data class ChangeFontSize(val size: FontSize) : SettingsIntent
     data class ToggleReminder(val enabled: Boolean) : SettingsIntent
     data class ChangeReminderTime(val time: LocalTime) : SettingsIntent
+
+    // Notification permission
+    data object DismissPermissionDialog : SettingsIntent
+    data class OnNotificationPermissionResult(val granted: Boolean) : SettingsIntent
 }

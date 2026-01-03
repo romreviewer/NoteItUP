@@ -1,5 +1,14 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
+
+// Load local.properties for API keys
+val localProperties = Properties().apply {
+    val localPropertiesFile = rootProject.file("local.properties")
+    if (localPropertiesFile.exists()) {
+        load(localPropertiesFile.inputStream())
+    }
+}
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -125,6 +134,21 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
         versionName = "1.0"
+
+        // API Keys from local.properties (gitignored)
+        val dropboxAppKey = localProperties.getProperty("DROPBOX_APP_KEY", "")
+        val dropboxAppSecret = localProperties.getProperty("DROPBOX_APP_SECRET", "")
+        val googleClientId = localProperties.getProperty("GOOGLE_CLIENT_ID", "")
+        val googleClientSecret = localProperties.getProperty("GOOGLE_CLIENT_SECRET", "")
+
+        // BuildConfig fields for runtime access
+        buildConfigField("String", "DROPBOX_APP_KEY", "\"$dropboxAppKey\"")
+        buildConfigField("String", "DROPBOX_APP_SECRET", "\"$dropboxAppSecret\"")
+        buildConfigField("String", "GOOGLE_CLIENT_ID", "\"$googleClientId\"")
+        buildConfigField("String", "GOOGLE_CLIENT_SECRET", "\"$googleClientSecret\"")
+
+        // Manifest placeholders for intent filter
+        manifestPlaceholders["dropboxScheme"] = "db-$dropboxAppKey"
     }
     packaging {
         resources {
@@ -139,6 +163,10 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+    }
+
+    buildFeatures {
+        buildConfig = true
     }
 }
 

@@ -119,17 +119,43 @@ class CloudSyncViewModel(
 
     private fun handleOAuthCallback(provider: CloudProviderType, code: String) {
         viewModelScope.launch {
-            when (val result = cloudSyncManager.handleOAuthCallback(provider, code)) {
-                is CloudResult.Success -> {
-                    _uiState.update { it.copy(successMessage = "Connected to ${provider.name.replace("_", " ")}") }
-                    refreshQuota()
+            // Show loading state
+            _uiState.update { it.copy(
+                isAuthenticating = true,
+                authenticatingProvider = provider
+            ) }
+
+            try {
+                when (val result = cloudSyncManager.handleOAuthCallback(provider, code)) {
+                    is CloudResult.Success -> {
+                        _uiState.update { it.copy(
+                            isAuthenticating = false,
+                            authenticatingProvider = null,
+                            successMessage = "Connected to ${provider.name.replace("_", " ")}"
+                        ) }
+                        refreshQuota()
+                    }
+                    is CloudResult.Error -> {
+                        _uiState.update { it.copy(
+                            isAuthenticating = false,
+                            authenticatingProvider = null,
+                            errorMessage = result.message
+                        ) }
+                    }
+                    is CloudResult.NotAuthenticated -> {
+                        _uiState.update { it.copy(
+                            isAuthenticating = false,
+                            authenticatingProvider = null,
+                            errorMessage = "Authentication failed"
+                        ) }
+                    }
                 }
-                is CloudResult.Error -> {
-                    _uiState.update { it.copy(errorMessage = result.message) }
-                }
-                is CloudResult.NotAuthenticated -> {
-                    _uiState.update { it.copy(errorMessage = "Authentication failed") }
-                }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(
+                    isAuthenticating = false,
+                    authenticatingProvider = null,
+                    errorMessage = "Connection failed: ${e.message}"
+                ) }
             }
         }
     }

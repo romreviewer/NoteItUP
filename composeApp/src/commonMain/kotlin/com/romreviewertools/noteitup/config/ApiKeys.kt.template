@@ -1,0 +1,38 @@
+# API Keys Setup
+
+API keys are now loaded from platform-specific sources:
+
+## Android Setup
+
+Add keys to `local.properties` (already gitignored):
+
+```properties
+# Cloud Sync API Keys (DO NOT COMMIT)
+DROPBOX_APP_KEY=your_dropbox_app_key
+DROPBOX_APP_SECRET=your_dropbox_app_secret
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+```
+
+## Getting Credentials
+
+### Dropbox
+1. Go to https://www.dropbox.com/developers/apps
+2. Create app → "Scoped access" → "App folder"
+3. Enable permissions: `files.content.write`, `files.content.read`
+4. Copy App key and App secret
+
+### Google Drive (Coming Soon)
+1. Go to https://console.cloud.google.com/
+2. Create project → Enable Google Drive API
+3. Configure OAuth consent screen
+4. Create OAuth 2.0 credentials
+5. Copy Client ID and Client secret
+
+## iOS Setup
+Edit `iosMain/kotlin/.../config/ApiKeys.ios.kt` with your keys.
+
+## JVM/Desktop Setup
+Pass keys via system properties or environment variables:
+- `-DDROPBOX_APP_KEY=xxx` or
+- `export DROPBOX_APP_KEY=xxx`

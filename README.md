@@ -61,7 +61,10 @@ A modern, feature-rich personal diary application built with **Kotlin Multiplatf
 
 ### Data Management
 - **Export/Import** - Backup and restore entries (JSON format)
-- **Cloud Sync** - Sync entries across devices (coming soon)
+- **Cloud Sync** - Backup to cloud providers
+  - Dropbox integration (available)
+  - Google Drive (coming soon)
+  - Auto-sync with configurable intervals
 
 ## Tech Stack
 
@@ -126,6 +129,18 @@ The app follows **Clean Architecture** with **MVI (Model-View-Intent)** pattern:
 - `expect/actual` for platform-specific implementations
 - Unidirectional data flow with StateFlow
 - Repository pattern for data access
+
+## Cloud Sync Setup
+
+### Dropbox Setup
+1. Create an app at [Dropbox App Console](https://www.dropbox.com/developers/apps)
+2. Choose "Scoped access" and "App folder"
+3. In Permissions tab, enable `files.content.write` and `files.content.read`
+4. In Settings tab, add OAuth2 Redirect URI: `com.romreviewertools.noteitup://oauth2callback`
+5. Copy `ApiKeys.kt.template` to `ApiKeys.kt` and add your App Key and Secret
+
+### Google Drive Setup (Coming Soon)
+Instructions will be added when Google Drive integration is enabled.
 
 ## Contributing
 

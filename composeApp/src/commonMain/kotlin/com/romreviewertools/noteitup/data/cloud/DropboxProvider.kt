@@ -12,6 +12,9 @@ import kotlinx.coroutines.flow.map
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
+import kotlin.random.Random
 
 /**
  * Dropbox cloud provider implementation.
@@ -32,6 +35,9 @@ class DropboxProvider(
         isLenient = true
     }
 
+    // PKCE code verifier - stored temporarily during OAuth flow
+    private var codeVerifier: String? = null
+
     companion object {
         private const val AUTH_URL = "https://www.dropbox.com/oauth2/authorize"
         private const val TOKEN_URL = "https://api.dropboxapi.com/oauth2/token"
@@ -40,22 +46,46 @@ class DropboxProvider(
         private const val BACKUP_FOLDER = "/NoteItUP_Backups"
     }
 
+    // Generate PKCE code verifier (43-128 characters)
+    @OptIn(ExperimentalEncodingApi::class)
+    private fun generateCodeVerifier(): String {
+        val bytes = ByteArray(32)
+        Random.nextBytes(bytes)
+        return Base64.UrlSafe.encode(bytes).trimEnd('=')
+    }
+
+    // Generate code challenge from verifier using S256 method
+    @OptIn(ExperimentalEncodingApi::class)
+    private fun generateCodeChallenge(verifier: String): String {
+        // For simplicity, use plain method (S256 requires SHA256 which needs platform-specific code)
+        // Dropbox supports both plain and S256
+        return verifier
+    }
+
     override fun isAuthenticated(): Flow<Boolean> {
         return cloudSyncRepository.getAccessToken(type).map { it != null }
     }
 
     override suspend fun getAuthUrl(): String {
-        val redirectUri = oAuthHandler.getRedirectUri(type)
+        val redirectUri = oAuthHandler.getRedirectUri(type).encodeURLParameter()
+        // Generate and store PKCE verifier
+        codeVerifier = generateCodeVerifier()
+        val codeChallenge = generateCodeChallenge(codeVerifier!!)
+
         return "$AUTH_URL?" +
                 "client_id=$appKey&" +
                 "redirect_uri=$redirectUri&" +
                 "response_type=code&" +
-                "token_access_type=offline"
+                "token_access_type=offline&" +
+                "code_challenge=$codeChallenge&" +
+                "code_challenge_method=plain"
     }
 
     override suspend fun handleAuthCallback(code: String): CloudResult<Unit> {
         return try {
             val redirectUri = oAuthHandler.getRedirectUri(type)
+            val verifier = codeVerifier ?: return CloudResult.Error("PKCE verifier not found. Please try again.")
+
             val response: HttpResponse = httpClient.submitForm(
                 url = TOKEN_URL,
                 formParameters = parameters {
@@ -64,8 +94,12 @@ class DropboxProvider(
                     append("client_secret", appSecret)
                     append("redirect_uri", redirectUri)
                     append("grant_type", "authorization_code")
+                    append("code_verifier", verifier)
                 }
             )
+
+            // Clear verifier after use
+            codeVerifier = null
 
             if (response.status.isSuccess()) {
                 val tokenResponse: DropboxTokenResponse = json.decodeFromString(response.bodyAsText())

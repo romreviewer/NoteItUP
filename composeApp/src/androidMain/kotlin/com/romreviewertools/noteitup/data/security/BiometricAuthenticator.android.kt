@@ -52,9 +52,9 @@ actual class BiometricAuthenticator(
         subtitle: String,
         negativeButtonText: String
     ): BiometricResult = suspendCancellableCoroutine { continuation ->
-        val activity = context as? FragmentActivity
+        val activity = ActivityHolder.getActivity()
         if (activity == null) {
-            continuation.resume(BiometricResult.Error("Activity not available"))
+            continuation.resume(BiometricResult.Error("Activity not available. Please try again."))
             return@suspendCancellableCoroutine
         }
 
