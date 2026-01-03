@@ -142,6 +142,20 @@ The app follows **Clean Architecture** with **MVI (Model-View-Intent)** pattern:
 ### Google Drive Setup (Coming Soon)
 Instructions will be added when Google Drive integration is enabled.
 
+## Firebase Setup (Analytics & Crashlytics)
+
+1. Go to [Firebase Console](https://console.firebase.google.com/)
+2. Create a new project or select existing one
+3. Add an Android app with package name: `com.romreviewertools.noteitup`
+4. Download `google-services.json` and place it in `composeApp/` directory
+5. Enable **Analytics** and **Crashlytics** in Firebase Console
+
+The app uses Firebase for:
+- **Analytics**: Track user events and screen views
+- **Crashlytics**: Crash reporting and error tracking
+
+Note: `google-services.json` is gitignored for security. See `google-services.json.template` for the expected structure.
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.

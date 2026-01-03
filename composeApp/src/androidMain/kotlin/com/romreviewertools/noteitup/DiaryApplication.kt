@@ -11,7 +11,6 @@ import org.koin.core.logger.Level
 class DiaryApplication : Application() {
     override fun onCreate() {
         super.onCreate()
-
         startKoin {
             androidLogger(Level.DEBUG)
             androidContext(this@DiaryApplication)

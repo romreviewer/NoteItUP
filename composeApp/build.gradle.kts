@@ -18,6 +18,8 @@ plugins {
     alias(libs.plugins.composeHotReload)
     alias(libs.plugins.kotlinxSerialization)
     alias(libs.plugins.sqldelight)
+    alias(libs.plugins.googleServices)
+    alias(libs.plugins.firebaseCrashlytics)
 }
 
 kotlin {
@@ -58,6 +60,8 @@ kotlin {
 
             // Location services
             implementation(libs.play.services.location)
+
+            // Firebase (using BOM via dependencies block below)
         }
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -172,6 +176,11 @@ android {
 
 dependencies {
     debugImplementation(compose.uiTooling)
+
+    // Firebase BOM and dependencies
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.analytics)
+    implementation(libs.firebase.crashlytics)
 }
 
 compose.desktop {
