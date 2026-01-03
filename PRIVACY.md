@@ -94,6 +94,60 @@ We take security seriously:
 - We regularly update the app to fix security vulnerabilities
 - We never build backdoors or ways to access your diary
 
+## App Permissions Explained
+
+NoteItUP requests the following permissions to provide its features. All permissions are optional except storage (required for core functionality):
+
+### **Storage / Files**
+- **Permission**: Read/Write External Storage (Android 12 and below), Read Media Images (Android 13+)
+- **Why We Need It**: To save and load your diary entries, photos, and backup files
+- **When Used**: Continuously for app functionality
+- **Optional**: ❌ Required for app to function
+- **Can Be Revoked**: No (app won't work without it)
+
+### **Camera** 📷
+- **Permission**: CAMERA
+- **Why We Need It**: To capture photos directly from the app to attach to diary entries
+- **When Used**: Only when you tap the camera button to take a photo
+- **Optional**: ✅ Yes (you can still attach photos from gallery)
+- **Can Be Revoked**: Yes (you can disable in system settings)
+
+### **Location** 📍
+- **Permission**: ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION
+- **Why We Need It**: To add GPS coordinates and location names to diary entries
+- **When Used**: Only when you enable location tagging for an entry
+- **Optional**: ✅ Yes (location tagging is completely optional)
+- **Can Be Revoked**: Yes (location features will be disabled)
+- **Privacy Note**: Location data stays on your device unless you sync to cloud
+
+### **Internet** 🌐
+- **Permission**: INTERNET, ACCESS_NETWORK_STATE
+- **Why We Need It**: For optional cloud backup to Dropbox and anonymous crash reporting
+- **When Used**: Only when syncing to cloud or when app crashes
+- **Optional**: ✅ Yes (app works fully offline)
+- **Can Be Revoked**: Cannot be disabled (system permission)
+- **Privacy Note**: We never send your diary content over internet without encryption
+
+### **Notifications** 🔔
+- **Permission**: POST_NOTIFICATIONS (Android 13+)
+- **Why We Need It**: To send you daily writing reminders (if you enable them)
+- **When Used**: Only if you enable daily reminders in Settings
+- **Optional**: ✅ Yes (reminders are opt-in)
+- **Can Be Revoked**: Yes (disable in system settings or app settings)
+
+### **Biometric / Fingerprint** 🔐
+- **Permission**: USE_BIOMETRIC, USE_FINGERPRINT
+- **Why We Need It**: To unlock the app with fingerprint or face recognition
+- **When Used**: Only if you enable biometric lock in Security settings
+- **Optional**: ✅ Yes (you can use PIN or no lock)
+- **Can Be Revoked**: Yes (biometric lock will be disabled)
+- **Privacy Note**: We don't store biometric data; we only ask the system to verify
+
+### **No Account Required**
+NoteItUP does not require any account, email, phone number, or personal information to use. All permissions are for local device features only.
+
+---
+
 ## Your Rights and Control
 
 You have complete control over your data:
