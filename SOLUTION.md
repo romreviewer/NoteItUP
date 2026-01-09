@@ -125,6 +125,8 @@ Create an open-source, privacy-focused diary app that combines the best features
     - Include options (entries, folders, tags)
     - Export and share functionality
     - Import/Restore from JSON backup file
+    - Import from Day One ZIP exports
+    - Import from Joplin JEX (TAR archive) exports
     - Platform-specific file picker for selecting backup files
 
 11. **Security Settings Screen** (`SecuritySettingsScreen.kt`)
@@ -386,6 +388,14 @@ NoteItUP/
 │       │   │   ├── export/
 │       │   │   │   ├── FileExporter.kt (expect)
 │       │   │   │   └── FileImporter.kt (expect)
+│       │   │   ├── import/
+│       │   │   │   ├── TarExtractor.kt (expect)
+│       │   │   │   ├── dayone/
+│       │   │   │   │   ├── DayOneModels.kt
+│       │   │   │   │   └── DayOneParser.kt
+│       │   │   │   └── joplin/
+│       │   │   │       ├── JoplinModels.kt
+│       │   │   │       └── JoplinParser.kt
 │       │   │   ├── repository/
 │       │   │   │   ├── DiaryRepositoryImpl.kt
 │       │   │   │   └── SecurityRepositoryImpl.kt
@@ -405,6 +415,8 @@ NoteItUP/
 │       │   │       ├── UpdateEntryUseCase.kt
 │       │   │       ├── ExportEntriesUseCase.kt
 │       │   │       ├── ImportEntriesUseCase.kt
+│       │   │       ├── ImportDayOneUseCase.kt
+│       │   │       ├── ImportJoplinUseCase.kt
 │       │   │       └── ...
 │       │   └── presentation/
 │       │       ├── navigation/
@@ -473,6 +485,7 @@ kotlinx-datetime = "0.7.1"
 kotlinx-serialization = "1.7.3"
 navigation-compose = "2.9.1"
 uuid = "0.8.4"
+commons-compress = "1.25.0"
 ```
 
 ### Platform-Specific
@@ -576,13 +589,413 @@ backup_TIMESTAMP.noteitup
 | iOS | CommonCrypto | Ktor + Darwin | UIApplication |
 | JVM | javax.crypto | Ktor + Java | Desktop browser |
 
+### Phase 7 - Import from Popular Apps (Mostly Completed)
+
+**Import functionality from Day One and Joplin journaling apps.**
+
+**Completed:**
+- [x] Day One ZIP import support (Android, JVM)
+- [x] Joplin JEX (TAR archive) import support (Android, JVM)
+- [x] Smart title extraction for Day One entries
+- [x] Notebook-to-Folder mapping for Joplin
+- [x] To-do conversion with checkbox notation
+- [x] Location data preservation
+- [x] Tag and folder hierarchy preservation
+- [x] Skip & track error handling
+- [x] Photo/image import with thumbnail generation
+- [x] Full UI integration in ExportScreen
+- [x] Dependency injection setup
+- [x] ViewModel integration with proper state management
+
+**Pending:**
+- [ ] iOS TarExtractor implementation (Joplin import on iOS)
+  - Challenge: No built-in TAR support in iOS Foundation framework
+  - Options: CocoaPods library (e.g., "LightUntar"), Swift Compression framework, or custom TAR parser
+  - Day One import works on iOS (uses ZipExporter which is already implemented)
+- [ ] Testing with real Day One export files
+- [ ] Testing with real Joplin JEX export files
+- [ ] Integration testing across all platforms
+- [ ] Joplin resource reference parsing (images in markdown content with `![](:/resource_id)` notation)
+- [ ] Large import performance optimization (1000+ entries)
+
+**Supported Import Formats:**
+
+| Format | Source App | Structure | Features |
+|--------|------------|-----------|----------|
+| Day One ZIP | Day One | Journal.json + photos/ | Markdown content, starred→favorite, tags, location, photos |
+| Joplin JEX | Joplin | TAR with JSON files | Notebooks→folders, to-dos→checkboxes, tags, resources |
+
+**Components:**
+
+| Component | Description |
+|-----------|-------------|
+| `DayOneParser` | Parses Day One JSON exports with smart title extraction |
+| `JoplinParser` | Parses Joplin JEX archives with type-based detection |
+| `ImportDayOneUseCase` | Orchestrates Day One import flow |
+| `ImportJoplinUseCase` | Orchestrates Joplin import flow |
+| `TarExtractor` | Platform-specific TAR extraction (expect/actual) |
+
+**Day One Import Flow:**
+```
+Day One ZIP → Extract → Parse Journal.json → Transform Data → Import
+                ↓
+         photos/*.jpg → Copy to app storage → Create thumbnails
+```
+
+**Joplin Import Flow:**
+```
+Joplin JEX → TAR Extract → Detect types (1=note, 2=notebook, 5=tag, etc.)
+                               ↓
+                    Transform & map IDs → Import with relationships
+```
+
+**Key Mappings:**
+
+Day One:
+- `starred` → `isFavorite`
+- First markdown heading → `title` (or first line, or date-based fallback)
+- `photos` → `ImageAttachment` objects
+- `tags` → Tags (created if not exists)
+- `location` → Location object
+
+Joplin:
+- Notebooks → Folders (with parent hierarchy)
+- `is_todo=1` → Regular entry with `- [ ]` checkbox notation
+- `todo_completed=1` → `- [x]` checked notation
+- `parent_id` → `folderId` (hierarchy preserved)
+- Resources (type_=4, mime=image/*) → ImageAttachment objects
+
+**Enhanced Import Result:**
+```kotlin
+data class ImportResult(
+    val success: Boolean,
+    val entriesImported: Int,
+    val foldersImported: Int,
+    val tagsImported: Int,
+    val imagesImported: Int,
+    val entriesSkipped: Int,        // NEW
+    val skippedItems: List<SkippedItem>, // NEW
+    val error: String?
+)
+```
+
+**Dependencies Added:**
+- `org.apache.commons:commons-compress:1.25.0` (Android/JVM) - TAR extraction
+
+**Platform-Specific Implementations:**
+| Platform | TAR Extraction | Status |
+|----------|----------------|--------|
+| Android | Apache Commons Compress | ✅ Implemented |
+| JVM | Apache Commons Compress | ✅ Implemented |
+| iOS | Pending | ⏳ Not yet implemented |
+
+**Current Limitations:**
+- Joplin import only available on Android and Desktop (JVM) platforms
+- iOS users can import Day One archives but not Joplin JEX files until iOS TarExtractor is implemented
+- Images embedded in Joplin markdown content (resource references) are not yet parsed and linked
+
+---
+
 ## Future Features
 
-### Phase 7 - Advanced
-- [ ] Image attachments
-- [ ] Location tagging
-- [ ] Widgets (Android)
+### Phase 7.5 - WYSIWYG Markdown Editor (Completed ✅)
+
+**Rich text editing experience with markdown storage.**
+
+#### Implementation Status: ✅ Completed
+
+The app now features a WYSIWYG markdown editor where users see formatted text while editing, without needing to toggle between edit and preview modes.
+
+#### What Was Implemented
+
+**Library Used:** `Richeditor-compose` by MohamedRejeb v1.0.0-rc07
+- Full Kotlin Multiplatform support (Android, iOS, Desktop)
+- Native markdown bidirectional conversion (`setMarkdown()` / `toMarkdown()`)
+- Material 3 integration
+- Built-in text formatting support
+
+**Changes Made:**
+
+1. **Added Library Dependency** (`build.gradle.kts` + `libs.versions.toml`):
+   ```kotlin
+   implementation(libs.richeditor.compose)
+   ```
+
+2. **Updated EditorScreen.kt**:
+   - Replaced `BasicTextField` with `RichTextEditor` component
+   - Removed preview mode toggle (no longer needed)
+   - Integrated `rememberRichTextState()` for state management
+   - Auto-sync markdown content with `richTextState.setMarkdown()` and `richTextState.toMarkdown()`
+   - Removed markdown toolbar (formatting is now visual)
+
+3. **UI Improvements**:
+   - Removed the preview/edit toggle button (👁️ icon) from top bar
+   - Content now displays formatted in real-time as users type
+   - **Bold**, *italic*, headings, lists render immediately
+   - Cleaner, more focused writing experience
+
+#### How It Works
+
+```kotlin
+// Rich text state manages content
+val richTextState = rememberRichTextState()
+
+// Load markdown content from database
+LaunchedEffect(uiState.content) {
+    richTextState.setMarkdown(uiState.content)
+}
+
+// Save markdown content on save
+viewModel.processIntent(EditorIntent.UpdateContent(richTextState.toMarkdown()))
+
+// Display rich text editor
+RichTextEditor(
+    state = richTextState,
+    modifier = Modifier.fillMaxWidth().weight(1f),
+    textStyle = MaterialTheme.typography.bodyLarge,
+    placeholder = { Text("Write your thoughts...") }
+)
+```
+
+#### Benefits Achieved
+
+- ✅ **WYSIWYG editing**: Users see formatted text while typing
+- ✅ **Markdown storage**: Content still saved as markdown for compatibility
+- ✅ **No mode switching**: Edit and preview are now unified
+- ✅ **Cross-platform**: Works on Android, iOS, and Desktop
+- ✅ **Simplified UI**: Removed unnecessary toggle button
+- ✅ **Better UX**: Uninterrupted writing flow
+
+#### Testing & Next Steps
+
+**Testing Completed:**
+- ✅ Library integration successful
+- ✅ Build passing on Android
+- ✅ Markdown conversion working (bidirectional)
+- ✅ UI updated and streamlined
+
+**To Be Tested:**
+- [ ] Manual testing on Android device/emulator
+- [ ] Testing on iOS device/simulator
+- [ ] Testing on Desktop (JVM)
+- [ ] Performance with long entries (1000+ words)
+- [ ] Edge cases: empty content, special characters, complex markdown
+
+**Potential Future Enhancements:**
+- Add optional formatting toolbar (bold, italic, heading buttons)
+- Support for inline image preview in editor
+- Table editing support
+- Code block syntax highlighting
+- Customizable text styles and colors
+
+---
+
+### Phase 8 - API-Based AI Integration (Planned)
+
+**Cloud AI for text improvement and brainstorming - User brings their own API key.**
+
+#### Vision
+Integrate popular AI APIs (OpenAI, Claude, Gemini, Groq) to assist users with writing and brainstorming. Users provide their own API keys, ensuring zero cost to developers and giving users full control over their AI provider and usage.
+
+#### Core Features
+
+**1. AI Text Improvement & Suggestions**
+- Grammar and spelling corrections
+- Style improvements and rewording suggestions
+- Tone adjustment (formal, casual, concise, etc.)
+- Sentence restructuring for clarity
+- Real-time suggestions while writing
+
+**2. Brainstorming Chatbot**
+- Conversational AI for idea generation
+- Journaling prompts and reflection questions
+- Creative writing assistance
+- Memory-based conversations (context from previous entries)
+
+#### Supported AI Providers
+
+Users can choose from multiple popular AI APIs (bring your own API key):
+
+| Provider | Models Available | Free Tier | Pricing | Best For |
+|----------|-----------------|-----------|---------|----------|
+| **OpenAI** | GPT-4o, GPT-4o-mini, GPT-3.5-turbo | No | $0.15-$5/1M tokens | High-quality text improvement |
+| **Anthropic Claude** | Claude 3.5 Sonnet, Haiku | No | $3-$15/1M tokens | Long-form writing assistance |
+| **Google Gemini** | Gemini 1.5 Flash, Pro | ✅ Yes (generous) | Free tier + paid | Cost-effective, good quality |
+| **Groq** | Llama 3, Mixtral, Gemma | ✅ Yes | Free + paid | Fast inference speed |
+| **OpenRouter** | 100+ models | ✅ Some free | Pay-per-use | Access to many models |
+| **Together AI** | Qwen, Llama, Mixtral | ✅ Yes ($25 credit) | Pay-per-use | Open-source models |
+
+**Provider Selection Criteria:**
+- User brings their own API key (zero cost to app/developer)
+- Free tiers available for users to try
+- Standard OpenAI-compatible API format
+- Good performance for diary/text improvement tasks
+- Privacy-conscious options available
+
+#### Technical Implementation Plan
+
+**Architecture:**
+```
+┌─────────────────────────────────────────────────┐
+│            NoteItUP Diary App                   │
+│  ┌───────────────────────────────────────────┐  │
+│  │     Editor Screen / Chat Interface        │  │
+│  └──────────────┬────────────────────────────┘  │
+│                 │                                │
+│  ┌──────────────▼────────────────────────────┐  │
+│  │      AI Service (Use Cases)               │  │
+│  │  - TextImprovementUseCase                 │  │
+│  │  - BrainstormingChatUseCase               │  │
+│  └──────────────┬────────────────────────────┘  │
+│                 │                                │
+│  ┌──────────────▼────────────────────────────┐  │
+│  │   AI API Service (expect/actual)          │  │
+│  │  - API key management                     │  │
+│  │  - HTTP client with retry logic           │  │
+│  │  - Response parsing & streaming           │  │
+│  │  - Context management                     │  │
+│  └──────────────┬────────────────────────────┘  │
+│                 │                                │
+│  ┌──────────────▼────────────────────────────┐  │
+│  │    Platform-Specific HTTP & Storage       │  │
+│  │  Android: Ktor + OkHttp                   │  │
+│  │  iOS: Ktor + Darwin                       │  │
+│  │  Desktop: Ktor + Java                     │  │
+│  └───────────────────────────────────────────┘  │
+│                 │                                │
+│                 ▼                                │
+│        ☁️ User's AI Provider                    │
+│     (OpenAI / Claude / Gemini / etc.)          │
+└─────────────────────────────────────────────────┘
+```
+
+**Key Technologies:**
+- **Ktor Client**: Cross-platform HTTP client for API calls
+  - Already used in Phase 6 (Cloud Sync)
+  - Supports request/response streaming
+  - Built-in retry and timeout handling
+- **kotlinx.serialization**: JSON parsing for API responses
+- **Encrypted Preferences**: Secure API key storage
+  - Android: EncryptedSharedPreferences
+  - iOS: Keychain Services
+  - JVM: Platform-specific secure storage
+- **OpenAI-compatible API**: Standard format used by most providers
+
+#### Features Breakdown
+
+**Settings Screen Additions:**
+- [ ] AI provider selection (OpenAI, Claude, Gemini, Groq, etc.)
+- [ ] API key management with secure storage
+- [ ] Model selection per provider (e.g., GPT-4o vs GPT-4o-mini)
+- [ ] Provider connection test
+- [ ] Enable/disable AI features toggle
+- [ ] Usage tracking (token counts, cost estimates)
+- [ ] Privacy notice and data handling disclosure
+
+**Editor Enhancements:**
+- [ ] "Improve Text" button with AI suggestions
+- [ ] Context menu actions (improve, rephrase, expand, shorten)
+- [ ] Tone adjustment options (formal, casual, concise, creative)
+- [ ] Grammar and spelling correction with inline suggestions
+- [ ] Accept/reject suggestion UI with diff view
+- [ ] Batch improvement for entire entry
+- [ ] Streaming response display with cancel option
+
+**Brainstorming Chat:**
+- [ ] Dedicated chat interface with AI assistant
+- [ ] Conversation history (session-based, stored locally)
+- [ ] Quick prompts (reflection questions, creative prompts, journaling ideas)
+- [ ] Insert chat responses directly into diary entry
+- [ ] Context awareness (can reference previous diary entries with user permission)
+- [ ] Provider and model switching within chat
+
+#### BYOK (Bring Your Own Key) Advantages
+
+**Cost Benefits:**
+- ✅ Zero cost to app developers (no API expenses)
+- ✅ Users pay only for what they use
+- ✅ Access to free tier providers (Gemini, Groq, OpenRouter)
+- ✅ Users can take advantage of promotional credits
+- ✅ No recurring subscription fees from the app
+
+**Privacy & Control:**
+- ✅ Users choose their AI provider based on privacy preferences
+- ✅ Direct relationship between user and AI provider
+- ✅ API keys stored securely on device (encrypted storage/keychain)
+- ✅ Users can delete API keys and data anytime
+- ✅ No app-level tracking of AI usage
+- ✅ Option to use privacy-focused providers (e.g., local-first options in future)
+
+**Flexibility:**
+- ✅ Users can switch providers anytime
+- ✅ Access to latest models as providers release them
+- ✅ Choose different models for different tasks (fast vs high-quality)
+- ✅ Freedom to use multiple providers simultaneously
+
+#### Technical Challenges
+
+**High Priority:**
+- [ ] Secure API key storage across platforms (Keychain/EncryptedPreferences)
+- [ ] HTTP client configuration with streaming support
+- [ ] Rate limiting and retry logic for API calls
+- [ ] Error handling for API failures and network issues
+- [ ] Token counting and cost estimation
+
+**Medium Priority:**
+- [ ] Provider-specific API format differences (OpenAI vs Claude vs Gemini)
+- [ ] Response streaming for real-time suggestions
+- [ ] Context management for long diary entries (token limits)
+- [ ] Prompt engineering for diary-specific tasks
+- [ ] UI/UX for AI interactions and suggestions
+- [ ] Offline mode graceful degradation
+
+**Low Priority:**
+- [ ] Multi-language support for AI prompts
+- [ ] Advanced prompt templates library
+- [ ] Usage analytics and cost tracking
+- [ ] Migration path to local models in Phase 9
+
+#### Implementation Phases
+
+**Phase 8.1 - API Key Management & Settings**
+1. Create AI settings repository with secure storage
+2. Implement API key input and validation UI
+3. Add provider selection (OpenAI, Claude, Gemini, Groq, etc.)
+4. Implement connection test functionality
+5. Set up Ktor HTTP client with proper configuration
+
+**Phase 8.2 - Text Improvement Use Cases**
+1. Design AI service architecture (expect/actual pattern)
+2. Implement OpenAI-compatible API client
+3. Create text improvement use cases (grammar, style, tone)
+4. Build suggestion UI in editor with accept/reject
+5. Add streaming response support
+
+**Phase 8.3 - Brainstorming Chat Interface**
+1. Design chat UI with conversation history
+2. Implement chat use case with context management
+3. Create journaling prompts library
+4. Add ability to insert AI responses into entries
+5. Support for referencing previous diary entries (with permission)
+
+**Phase 8.4 - Provider Support & Polish**
+1. Add support for multiple providers (Claude, Gemini, Groq)
+2. Implement token counting and cost estimation
+3. Add provider-specific model selection
+4. Performance optimization and error handling refinement
+5. Comprehensive testing across platforms and providers
+6. Documentation and user guide
+
+---
+
+### Phase 9 - Additional Advanced Features
+- [ ] Image attachments (native capture/gallery)
+- [ ] Widgets (Android home screen)
 - [ ] Local encryption (AES-256) for data at rest
+- [ ] Rich text formatting toolbar
+- [ ] Voice notes with transcription
+- [ ] Drawing/sketching support
+- [ ] Collaborative journaling (optional cloud sync with E2EE)
 
 ---
 
@@ -603,4 +1016,33 @@ Open `iosApp/iosApp.xcodeproj` in Xcode and run.
 
 ---
 
-*This document reflects the current implementation as of Phase 6 completion. All phases 1-6 are fully implemented, including Cloud Sync with Google Drive and Dropbox support.*
+*This document reflects the current implementation as of Phase 7 (mostly complete). Phases 1-6 are fully implemented. Phase 7 (Day One and Joplin import) is functional on Android and Desktop platforms, with iOS TarExtractor implementation pending for Joplin support on iOS.*
+
+---
+
+## Known Limitations & Pending Work
+
+### Phase 7 Remaining Tasks
+
+**High Priority:**
+1. **iOS TarExtractor Implementation**
+   - Required for Joplin import on iOS devices
+   - Day One import already works on all platforms
+   - Estimated effort: Medium (need to research iOS TAR extraction libraries)
+
+**Medium Priority:**
+2. **Real-world Testing**
+   - Test with actual Day One export files from users
+   - Test with actual Joplin JEX exports
+   - Validate edge cases and large imports
+
+3. **Joplin Image Resource Parsing**
+   - Parse `![](:/resource_id)` references in Joplin markdown
+   - Map old resource IDs to new image IDs
+   - Update markdown content with correct image references
+
+**Low Priority:**
+4. **Performance Optimization**
+   - Test with 1000+ entry imports
+   - Optimize batch database operations
+   - Add progress indicators for long-running imports

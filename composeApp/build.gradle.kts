@@ -61,6 +61,9 @@ kotlin {
             // Location services
             implementation(libs.play.services.location)
 
+            // Apache Commons Compress for TAR extraction
+            implementation("org.apache.commons:commons-compress:1.25.0")
+
             // Firebase (using BOM via dependencies block below)
         }
         commonMain.dependencies {
@@ -97,6 +100,9 @@ kotlin {
             implementation(libs.multiplatform.markdown.renderer)
             implementation(libs.multiplatform.markdown.renderer.m3)
 
+            // Rich Text Editor
+            implementation(libs.richeditor.compose)
+
             // Ktor HTTP Client (Cloud Sync)
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.content.negotiation)
@@ -124,6 +130,9 @@ kotlin {
 
             // Ktor JVM engine
             implementation(libs.ktor.client.java)
+
+            // Apache Commons Compress for TAR extraction
+            implementation("org.apache.commons:commons-compress:1.25.0")
         }
     }
 }

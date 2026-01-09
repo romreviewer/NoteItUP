@@ -68,6 +68,20 @@ fun ExportScreen(
         }
     )
 
+    val dayOnePickerLauncher = rememberFilePickerLauncher(
+        mimeType = "application/zip",
+        onFilePicked = { uri ->
+            viewModel.processIntent(ExportIntent.ImportDayOneFromUri(uri))
+        }
+    )
+
+    val joplinPickerLauncher = rememberFilePickerLauncher(
+        mimeType = "*/*", // JEX files
+        onFilePicked = { uri ->
+            viewModel.processIntent(ExportIntent.ImportJoplinFromUri(uri))
+        }
+    )
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -286,6 +300,92 @@ fun ExportScreen(
                             )
                             Spacer(modifier = Modifier.size(8.dp))
                             Text("Select Backup File")
+                        }
+                    }
+                }
+            }
+
+            // Day One Import Section
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                )
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "Import from Day One",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Import your Day One journal ZIP export. Supports entries, tags, starred entries, photos, and location data.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedButton(
+                        onClick = { dayOnePickerLauncher.launch() },
+                        enabled = !uiState.isImporting,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        if (uiState.isImporting) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.Upload,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.size(8.dp))
+                            Text("Select Day One ZIP")
+                        }
+                    }
+                }
+            }
+
+            // Joplin Import Section
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                )
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "Import from Joplin",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Import your Joplin JEX export. Supports notes, notebooks (as folders), tags, to-dos, and resources.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedButton(
+                        onClick = { joplinPickerLauncher.launch() },
+                        enabled = !uiState.isImporting,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        if (uiState.isImporting) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.Upload,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.size(8.dp))
+                            Text("Select Joplin JEX")
                         }
                     }
                 }

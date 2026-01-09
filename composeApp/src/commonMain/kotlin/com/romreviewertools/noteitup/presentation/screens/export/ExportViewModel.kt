@@ -4,10 +4,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.romreviewertools.noteitup.data.export.FileExporter
 import com.romreviewertools.noteitup.data.export.FileImporter
+import com.romreviewertools.noteitup.data.export.ZipExporter
+import com.romreviewertools.noteitup.data.import.TarExtractor
+import com.romreviewertools.noteitup.data.media.ImagePicker
 import com.romreviewertools.noteitup.domain.model.ExportFormat
 import com.romreviewertools.noteitup.domain.model.ExportResult
 import com.romreviewertools.noteitup.domain.usecase.ExportEntriesUseCase
+import com.romreviewertools.noteitup.domain.usecase.ImportDayOneUseCase
 import com.romreviewertools.noteitup.domain.usecase.ImportEntriesUseCase
+import com.romreviewertools.noteitup.domain.usecase.ImportJoplinUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,8 +23,13 @@ import kotlin.time.Clock
 class ExportViewModel(
     private val exportEntriesUseCase: ExportEntriesUseCase,
     private val importEntriesUseCase: ImportEntriesUseCase,
+    private val importDayOneUseCase: ImportDayOneUseCase,
+    private val importJoplinUseCase: ImportJoplinUseCase,
     private val fileExporter: FileExporter,
-    private val fileImporter: FileImporter
+    private val fileImporter: FileImporter,
+    private val zipExporter: ZipExporter,
+    private val tarExtractor: TarExtractor,
+    private val imagePicker: ImagePicker
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ExportUiState())
@@ -36,6 +46,8 @@ class ExportViewModel(
             ExportIntent.DismissError -> _uiState.update { it.copy(error = null) }
             ExportIntent.DismissResult -> _uiState.update { it.copy(exportResult = null) }
             is ExportIntent.ImportFromUri -> importFromUri(intent.uri)
+            is ExportIntent.ImportDayOneFromUri -> importDayOneFromUri(intent.uri)
+            is ExportIntent.ImportJoplinFromUri -> importJoplinFromUri(intent.uri)
             ExportIntent.DismissImportResult -> _uiState.update { it.copy(importResult = null) }
         }
     }
@@ -156,6 +168,61 @@ class ExportViewModel(
                     it.copy(
                         isImporting = false,
                         error = e.message ?: "Import failed"
+                    )
+                }
+            }
+        }
+    }
+
+    private fun importDayOneFromUri(uri: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isImporting = true, error = null) }
+
+            try {
+                val importResult = importDayOneUseCase(
+                    zipPath = uri,
+                    zipExporter = zipExporter,
+                    imagePicker = imagePicker
+                )
+                _uiState.update {
+                    it.copy(
+                        isImporting = false,
+                        importResult = importResult,
+                        error = if (!importResult.success) importResult.error else null
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isImporting = false,
+                        error = e.message ?: "Day One import failed"
+                    )
+                }
+            }
+        }
+    }
+
+    private fun importJoplinFromUri(uri: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isImporting = true, error = null) }
+
+            try {
+                val importResult = importJoplinUseCase(
+                    jexPath = uri,
+                    imagePicker = imagePicker
+                )
+                _uiState.update {
+                    it.copy(
+                        isImporting = false,
+                        importResult = importResult,
+                        error = if (!importResult.success) importResult.error else null
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isImporting = false,
+                        error = e.message ?: "Joplin import failed"
                     )
                 }
             }

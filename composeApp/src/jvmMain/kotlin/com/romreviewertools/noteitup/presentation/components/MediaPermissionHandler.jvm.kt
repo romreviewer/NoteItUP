@@ -16,8 +16,8 @@ actual fun MediaPermissionHandler(
     // JVM/Desktop doesn't need permission handling
     // For now, these are stubs - JVM would need JFileChooser integration
     content(
-        launchGallery = { onImagePickCancelled() },
-        launchCamera = { onImagePickCancelled() },
-        launchLocationPermission = { onLocationPermissionResult(false) }
+        { onImagePickCancelled() },
+        { onImagePickCancelled() },
+        { onLocationPermissionResult(false) }
     )
 }

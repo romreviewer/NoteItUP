@@ -31,16 +31,13 @@ import androidx.compose.material.icons.filled.AddAPhoto
 import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -62,27 +59,23 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.mikepenz.markdown.m3.Markdown
-import com.mikepenz.markdown.m3.markdownColor
-import com.mikepenz.markdown.m3.markdownTypography
+import com.mohamedrejeb.richeditor.model.rememberRichTextState
+import com.mohamedrejeb.richeditor.ui.material3.RichTextEditor
 import com.romreviewertools.noteitup.domain.model.Folder
 import com.romreviewertools.noteitup.domain.model.ImageAttachment
 import com.romreviewertools.noteitup.domain.model.Location
 import com.romreviewertools.noteitup.domain.model.Mood
 import com.romreviewertools.noteitup.domain.model.Tag
 import com.romreviewertools.noteitup.presentation.components.ImagePreview
-import com.romreviewertools.noteitup.presentation.components.MarkdownToolbar
 import com.romreviewertools.noteitup.presentation.components.MediaPermissionHandler
-import com.romreviewertools.noteitup.presentation.components.applyMarkdownFormat
+import com.romreviewertools.noteitup.presentation.components.RichTextToolbar
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -95,19 +88,16 @@ fun EditorScreen(
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Local state for content TextFieldValue to support text selection for markdown
-    var contentTextFieldValue by remember { mutableStateOf(TextFieldValue(uiState.content)) }
-
-    // Preview mode toggle
-    var isPreviewMode by remember { mutableStateOf(false) }
+    // Rich text state for WYSIWYG editing
+    val richTextState = rememberRichTextState()
 
     // Options panel expanded state (collapsed by default to give more writing space)
     var isOptionsExpanded by remember { mutableStateOf(false) }
 
     // Sync when content changes from ViewModel (e.g., when loading entry)
     LaunchedEffect(uiState.content) {
-        if (contentTextFieldValue.text != uiState.content) {
-            contentTextFieldValue = TextFieldValue(uiState.content)
+        if (richTextState.toMarkdown() != uiState.content) {
+            richTextState.setMarkdown(uiState.content)
         }
     }
 
@@ -159,16 +149,6 @@ fun EditorScreen(
                     }
                 },
                 actions = {
-                    // Preview/Edit toggle
-                    IconButton(
-                        onClick = { isPreviewMode = !isPreviewMode }
-                    ) {
-                        Icon(
-                            imageVector = if (isPreviewMode) Icons.Default.Edit else Icons.Default.Visibility,
-                            contentDescription = if (isPreviewMode) "Edit" else "Preview",
-                            tint = if (isPreviewMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                        )
-                    }
                     IconButton(
                         onClick = { viewModel.processIntent(EditorIntent.ToggleFavorite) }
                     ) {
@@ -179,7 +159,11 @@ fun EditorScreen(
                         )
                     }
                     IconButton(
-                        onClick = { viewModel.processIntent(EditorIntent.Save) },
+                        onClick = {
+                            // Save markdown content from rich text editor
+                            viewModel.processIntent(EditorIntent.UpdateContent(richTextState.toMarkdown()))
+                            viewModel.processIntent(EditorIntent.Save)
+                        },
                         enabled = !uiState.isSaving
                     ) {
                         if (uiState.isSaving) {
@@ -241,77 +225,38 @@ fun EditorScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Markdown toolbar (always visible in edit mode)
-                if (!isPreviewMode) {
-                    MarkdownToolbar(
-                        onFormatClick = { format ->
-                            contentTextFieldValue = applyMarkdownFormat(contentTextFieldValue, format)
-                            viewModel.processIntent(EditorIntent.UpdateContent(contentTextFieldValue.text))
-                        },
-                        modifier = Modifier.fillMaxWidth()
+                // Rich text formatting toolbar
+                RichTextToolbar(
+                    richTextState = richTextState,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Rich Text Editor with WYSIWYG markdown editing
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface
                     )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-
-                // Content area - takes most of the space
-                if (isPreviewMode) {
-                    // Preview mode - render markdown
-                    if (contentTextFieldValue.text.isNotBlank()) {
-                        Markdown(
-                            content = contentTextFieldValue.text,
-                            colors = markdownColor(
-                                text = MaterialTheme.colorScheme.onSurface
-                            ),
-                            typography = markdownTypography(
-                                paragraph = MaterialTheme.typography.bodyLarge
-                            ),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f)
-                                .verticalScroll(rememberScrollState())
-                        )
-                    } else {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "Nothing to preview",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                } else {
-                    // Edit mode - content field
-                    BasicTextField(
-                        value = contentTextFieldValue,
-                        onValueChange = { newValue ->
-                            contentTextFieldValue = newValue
-                            viewModel.processIntent(EditorIntent.UpdateContent(newValue.text))
-                        },
+                ) {
+                    RichTextEditor(
+                        state = richTextState,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp),
                         textStyle = MaterialTheme.typography.bodyLarge.copy(
                             color = MaterialTheme.colorScheme.onSurface
                         ),
-                        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f)
-                            .verticalScroll(rememberScrollState()),
-                        decorationBox = { innerTextField ->
-                            Box {
-                                if (contentTextFieldValue.text.isEmpty()) {
-                                    Text(
-                                        text = "Write your thoughts...",
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                                    )
-                                }
-                                innerTextField()
-                            }
+                        placeholder = {
+                            Text(
+                                text = "Write your thoughts...",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                            )
                         }
                     )
                 }
@@ -742,7 +687,7 @@ private fun LocationSection(
                 onClick = onRemoveLocation,
                 label = {
                     Text(
-                        text = location.address ?: "%.4f, %.4f".format(location.latitude, location.longitude),
+                        text = location.address ?: "${location.latitude}, ${location.longitude}",
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )

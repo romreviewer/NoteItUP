@@ -5,6 +5,8 @@ import com.romreviewertools.noteitup.data.database.DriverFactory
 import com.romreviewertools.noteitup.data.encryption.EncryptionService
 import com.romreviewertools.noteitup.data.export.FileExporter
 import com.romreviewertools.noteitup.data.export.FileImporter
+import com.romreviewertools.noteitup.data.export.ZipExporter
+import com.romreviewertools.noteitup.data.import.TarExtractor
 import com.romreviewertools.noteitup.data.location.LocationService
 import com.romreviewertools.noteitup.data.media.ImagePicker
 import com.romreviewertools.noteitup.data.notification.NotificationManager
@@ -22,6 +24,8 @@ val iosModule = module {
     single { PreferencesStorage() }
     single { FileExporter() }
     single { FileImporter() }
+    single { ZipExporter() }
+    single { TarExtractor() }  // Note: Stub implementation, Joplin import not yet available on iOS
     single { NotificationManager() }
     single { BiometricAuthenticator() }
     single { OAuthHandler() }

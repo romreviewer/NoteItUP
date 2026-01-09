@@ -42,7 +42,10 @@ class DiaryRepositoryImpl(
                     val tags = queries.getTagsForEntry(entity.id)
                         .executeAsList()
                         .map { it.toDomain() }
-                    entity.toDomain(tags)
+                    val images = queries.getImagesForEntry(entity.id)
+                        .executeAsList()
+                        .map { it.toDomain() }
+                    entity.toDomain(tags, images)
                 }
             }
     }
@@ -56,7 +59,10 @@ class DiaryRepositoryImpl(
                     val tags = queries.getTagsForEntry(entity.id)
                         .executeAsList()
                         .map { it.toDomain() }
-                    entity.toDomain(tags)
+                    val images = queries.getImagesForEntry(entity.id)
+                        .executeAsList()
+                        .map { it.toDomain() }
+                    entity.toDomain(tags, images)
                 }
             }
     }
@@ -66,7 +72,10 @@ class DiaryRepositoryImpl(
             val tags = queries.getTagsForEntry(entity.id)
                 .executeAsList()
                 .map { it.toDomain() }
-            entity.toDomain(tags)
+            val images = queries.getImagesForEntry(entity.id)
+                .executeAsList()
+                .map { it.toDomain() }
+            entity.toDomain(tags, images)
         }
     }
 
@@ -134,7 +143,10 @@ class DiaryRepositoryImpl(
                     val tags = queries.getTagsForEntry(entity.id)
                         .executeAsList()
                         .map { it.toDomain() }
-                    entity.toDomain(tags)
+                    val images = queries.getImagesForEntry(entity.id)
+                        .executeAsList()
+                        .map { it.toDomain() }
+                    entity.toDomain(tags, images)
                 }
             }
     }
@@ -183,7 +195,10 @@ class DiaryRepositoryImpl(
                     val tags = queries.getTagsForEntry(entity.id)
                         .executeAsList()
                         .map { it.toDomain() }
-                    entity.toDomain(tags)
+                    val images = queries.getImagesForEntry(entity.id)
+                        .executeAsList()
+                        .map { it.toDomain() }
+                    entity.toDomain(tags, images)
                 }
             }
     }
@@ -225,7 +240,10 @@ class DiaryRepositoryImpl(
                     val tags = queries.getTagsForEntry(entity.id)
                         .executeAsList()
                         .map { it.toDomain() }
-                    entity.toDomain(tags)
+                    val images = queries.getImagesForEntry(entity.id)
+                        .executeAsList()
+                        .map { it.toDomain() }
+                    entity.toDomain(tags, images)
                 }
             }
     }

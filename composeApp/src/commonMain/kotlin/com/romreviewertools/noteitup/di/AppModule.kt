@@ -17,6 +17,8 @@ import com.romreviewertools.noteitup.domain.repository.CloudSyncRepository
 import com.romreviewertools.noteitup.domain.repository.DiaryRepository
 import com.romreviewertools.noteitup.domain.repository.PreferencesRepository
 import com.romreviewertools.noteitup.domain.repository.SecurityRepository
+import com.romreviewertools.noteitup.data.import.dayone.DayOneParser
+import com.romreviewertools.noteitup.data.import.joplin.JoplinParser
 import com.romreviewertools.noteitup.domain.usecase.CreateEntryUseCase
 import com.romreviewertools.noteitup.domain.usecase.CreateFolderUseCase
 import com.romreviewertools.noteitup.domain.usecase.CreateTagUseCase
@@ -24,7 +26,9 @@ import com.romreviewertools.noteitup.domain.usecase.DeleteEntryUseCase
 import com.romreviewertools.noteitup.domain.usecase.DeleteFolderUseCase
 import com.romreviewertools.noteitup.domain.usecase.DeleteTagUseCase
 import com.romreviewertools.noteitup.domain.usecase.ExportEntriesUseCase
+import com.romreviewertools.noteitup.domain.usecase.ImportDayOneUseCase
 import com.romreviewertools.noteitup.domain.usecase.ImportEntriesUseCase
+import com.romreviewertools.noteitup.domain.usecase.ImportJoplinUseCase
 import com.romreviewertools.noteitup.domain.usecase.GetAllFoldersUseCase
 import com.romreviewertools.noteitup.domain.usecase.GetAllTagsUseCase
 import com.romreviewertools.noteitup.domain.usecase.GetEntriesUseCase
@@ -79,6 +83,14 @@ val useCaseModule = module {
     factoryOf(::DeleteFolderUseCase)
     factoryOf(::ExportEntriesUseCase)
     factoryOf(::ImportEntriesUseCase)
+
+    // Import parsers
+    singleOf(::DayOneParser)
+    singleOf(::JoplinParser)
+
+    // Import use cases
+    factoryOf(::ImportDayOneUseCase)
+    factoryOf(::ImportJoplinUseCase)
 }
 
 val cloudModule = module {

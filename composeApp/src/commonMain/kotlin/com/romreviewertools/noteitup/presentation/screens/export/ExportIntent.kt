@@ -12,5 +12,7 @@ sealed interface ExportIntent {
     data object DismissError : ExportIntent
     data object DismissResult : ExportIntent
     data class ImportFromUri(val uri: String) : ExportIntent
+    data class ImportDayOneFromUri(val uri: String) : ExportIntent
+    data class ImportJoplinFromUri(val uri: String) : ExportIntent
     data object DismissImportResult : ExportIntent
 }

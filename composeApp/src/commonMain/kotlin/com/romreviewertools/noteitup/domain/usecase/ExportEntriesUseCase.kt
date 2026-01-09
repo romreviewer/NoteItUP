@@ -4,6 +4,8 @@ import com.romreviewertools.noteitup.domain.model.DiaryEntry
 import com.romreviewertools.noteitup.domain.model.ExportFormat
 import com.romreviewertools.noteitup.domain.model.ExportOptions
 import com.romreviewertools.noteitup.domain.model.Folder
+import com.romreviewertools.noteitup.domain.model.ImageAttachment
+import com.romreviewertools.noteitup.domain.model.Location
 import com.romreviewertools.noteitup.domain.model.Tag
 import com.romreviewertools.noteitup.domain.repository.DiaryRepository
 import kotlinx.coroutines.flow.first
@@ -94,11 +96,17 @@ class ExportEntriesUseCase(
         folders: List<Folder>,
         tags: List<Tag>
     ): String {
+        // Collect all images from all entries
+        val allImages = entries.flatMap { entry ->
+            entry.images.map { it.toExportImage() }
+        }
+
         val exportData = ExportData(
             version = 1,
             entries = entries.map { it.toExportEntry() },
             folders = folders.map { it.toExportFolder() },
-            tags = tags.map { it.toExportTag() }
+            tags = tags.map { it.toExportTag() },
+            images = allImages
         )
         return json.encodeToString(exportData)
     }
@@ -177,7 +185,15 @@ class ExportEntriesUseCase(
         isFavorite = isFavorite,
         mood = mood?.name,
         folderId = folderId,
-        tagIds = tags.map { it.id }
+        tagIds = tags.map { it.id },
+        imageIds = images.map { it.id },
+        location = location
+    )
+
+    private fun ImageAttachment.toExportImage() = ExportImage(
+        id = id,
+        fileName = fileName,
+        createdAt = createdAt.toEpochMilliseconds()
     )
 
     private fun Folder.toExportFolder() = ExportFolder(
@@ -202,7 +218,8 @@ data class ExportData(
     val version: Int,
     val entries: List<ExportEntry>,
     val folders: List<ExportFolder>,
-    val tags: List<ExportTag>
+    val tags: List<ExportTag>,
+    val images: List<ExportImage> = emptyList()
 )
 
 @Serializable
@@ -215,7 +232,9 @@ data class ExportEntry(
     val isFavorite: Boolean,
     val mood: String?,
     val folderId: String?,
-    val tagIds: List<String>
+    val tagIds: List<String>,
+    val imageIds: List<String> = emptyList(),
+    val location: Location? = null
 )
 
 @Serializable
@@ -234,4 +253,11 @@ data class ExportTag(
     val id: String,
     val name: String,
     val color: Long?
+)
+
+@Serializable
+data class ExportImage(
+    val id: String,
+    val fileName: String,
+    val createdAt: Long
 )
