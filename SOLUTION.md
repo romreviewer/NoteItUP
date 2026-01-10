@@ -81,9 +81,13 @@ Create an open-source, privacy-focused diary app that combines the best features
 3. **Editor Screen** (`EditorScreen.kt`)
    - Title input
    - Mood selector with emoji chips
-   - Content area
+   - Content area (WYSIWYG markdown editor)
    - Favorite toggle
    - Save functionality
+   - **Back button with unsaved changes confirmation dialog** ⚠️ IMPORTANT
+     - Prevents accidental data loss
+     - Shows dialog: "Save changes?" with options: Save, Discard, Cancel
+     - Debounce protection to prevent multiple rapid taps causing navigation issues
 
 4. **Search Screen** (`SearchScreen.kt`)
    - SearchBar with debounced query (300ms)
@@ -142,6 +146,14 @@ Create an open-source, privacy-focused diary app that combines the best features
     - Biometric authentication button
     - PIN setup flow (enter, confirm)
     - Error handling for incorrect PIN
+
+13. **AI Settings Screen** (`AISettingsScreen.kt`)
+    - AI provider selection (6 providers)
+    - API key input with secure storage
+    - Model selection dropdown
+    - Connection test button
+    - Enable/disable AI features toggle
+    - Provider information cards
 
 ---
 
@@ -790,40 +802,101 @@ RichTextEditor(
 
 ---
 
-### Phase 8 - API-Based AI Integration (Planned)
+### Phase 8 - API-Based AI Integration (Completed ✅)
 
-**Cloud AI for text improvement and brainstorming - User brings their own API key.**
+**AI-powered writing assistance using user's own API keys (BYOK - Bring Your Own Key).**
 
-#### Vision
-Integrate popular AI APIs (OpenAI, Claude, Gemini, Groq) to assist users with writing and brainstorming. Users provide their own API keys, ensuring zero cost to developers and giving users full control over their AI provider and usage.
+**Completed:**
+- [x] Multi-provider AI support (OpenAI, Claude, Gemini, Groq, OpenRouter, Together AI)
+- [x] AI Settings screen with provider selection and API key management
+- [x] Secure API key storage (platform-specific encryption)
+- [x] Model selection per provider
+- [x] Connection test functionality
+- [x] 8 text improvement types (Journal, Grammar, Clarity, Shorter, Expand, Professional, Casual, Summarize)
+- [x] AI Toolbar in editor with horizontal scrollable chips
+- [x] AI suggestion dialog with preview and accept/cancel
+- [x] OpenAI-compatible API client
+- [x] Gemini-specific API client (custom format)
+- [x] Error handling with detailed logging
+- [x] UI integration in EditorScreen
+- [x] Streaming response infrastructure
+- [x] Dependency injection setup
 
-#### Core Features
+**Pending:**
+- [ ] Brainstorming chat interface
+- [ ] Conversation history storage
+- [ ] Token counting and cost estimation
+- [ ] Diff view for suggestions
+- [ ] Context awareness (reference previous entries)
 
-**1. AI Text Improvement & Suggestions**
-- Grammar and spelling corrections
-- Style improvements and rewording suggestions
-- Tone adjustment (formal, casual, concise, etc.)
-- Sentence restructuring for clarity
-- Real-time suggestions while writing
+**Components:**
+| Component | Description |
+|-----------|-------------|
+| `AIService` | Multi-provider AI API client |
+| `AISettingsRepository` | Secure settings and API key storage |
+| `ImproveTextUseCase` | Text improvement business logic |
+| `AISettingsScreen` | Provider selection and configuration UI |
+| `AIToolbar` | Horizontal chip list for improvement types |
+| `AISuggestionDialog` | AI suggestion preview dialog |
 
-**2. Brainstorming Chatbot**
-- Conversational AI for idea generation
-- Journaling prompts and reflection questions
-- Creative writing assistance
-- Memory-based conversations (context from previous entries)
+**Supported Providers:**
+- **Groq** (default) - Fast, generous free tier
+- **Google Gemini** - 15 req/min free tier
+- **OpenAI** - Paid (GPT-4o, GPT-4o-mini)
+- **Anthropic Claude** - Paid (Claude 3.5 Sonnet, Haiku)
+- **OpenRouter** - Access to 100+ models
+- **Together AI** - $25 free credit
+
+---
+
+## Detailed Phase 8 Implementation
+
+#### Overview
+Successfully integrated AI-powered text improvement features using multiple AI provider APIs. Users provide their own API keys, ensuring zero cost to developers while giving users full control over their AI provider and usage.
+
+#### Implemented Features
+
+**1. Multi-Provider AI Support**
+- ✅ OpenAI (GPT-4o, GPT-4o-mini, GPT-3.5-turbo)
+- ✅ Anthropic Claude (Claude 3.5 Sonnet, Haiku)
+- ✅ Google Gemini (Gemini 2.0 Flash, Gemini 2.5 Flash)
+- ✅ Groq (Llama 3.3, Mixtral) - **Default provider**
+- ✅ OpenRouter (100+ models)
+- ✅ Together AI (Llama, Mixtral, Qwen)
+
+**2. AI Text Improvement Types**
+Nine improvement options available via AI toolbar:
+1. **Improve for Journal** - Makes text more personal, reflective, emotionally authentic
+2. **Fix Grammar** - Corrects grammar, spelling, punctuation
+3. **Improve Clarity** - Enhances readability and understanding
+4. **Make Shorter** - Condenses while keeping key points
+5. **Expand** - Adds detail, examples, depth
+6. **Professional Tone** - Rewrites with formal, professional tone
+7. **Casual Tone** - Rewrites with friendly, casual tone
+8. **Summarize** - Creates concise summary of main points
+
+**3. AI Settings Management**
+- ✅ Provider selection with visual picker
+- ✅ Secure API key storage (platform-specific encryption)
+- ✅ Model selection per provider
+- ✅ Connection test functionality
+- ✅ Enable/disable AI features toggle
+- ✅ Streaming response support
 
 #### Supported AI Providers
 
 Users can choose from multiple popular AI APIs (bring your own API key):
 
-| Provider | Models Available | Free Tier | Pricing | Best For |
-|----------|-----------------|-----------|---------|----------|
-| **OpenAI** | GPT-4o, GPT-4o-mini, GPT-3.5-turbo | No | $0.15-$5/1M tokens | High-quality text improvement |
-| **Anthropic Claude** | Claude 3.5 Sonnet, Haiku | No | $3-$15/1M tokens | Long-form writing assistance |
-| **Google Gemini** | Gemini 1.5 Flash, Pro | ✅ Yes (generous) | Free tier + paid | Cost-effective, good quality |
-| **Groq** | Llama 3, Mixtral, Gemma | ✅ Yes | Free + paid | Fast inference speed |
-| **OpenRouter** | 100+ models | ✅ Some free | Pay-per-use | Access to many models |
-| **Together AI** | Qwen, Llama, Mixtral | ✅ Yes ($25 credit) | Pay-per-use | Open-source models |
+| Provider | Default Model | Free Tier | Pricing | Best For |
+|----------|--------------|-----------|---------|----------|
+| **Groq** ⭐ | llama-3.3-70b-versatile | ✅ Yes (generous) | Free + paid | **Fast, free, recommended** |
+| **Google Gemini** | gemini-2.0-flash | ✅ Yes (15 req/min) | Free tier + paid | Cost-effective, good quality |
+| **OpenAI** | gpt-4o-mini | No | $0.15-$5/1M tokens | High-quality text improvement |
+| **Anthropic Claude** | claude-3-5-haiku-20241022 | No | $3-$15/1M tokens | Long-form writing assistance |
+| **OpenRouter** | meta-llama/llama-3.2-3b-instruct:free | ✅ Some free | Pay-per-use | Access to 100+ models |
+| **Together AI** | meta-llama/Llama-3-8b-chat-hf | ✅ Yes ($25 credit) | Pay-per-use | Open-source models |
+
+⭐ **Groq is the default provider** - fastest inference with generous free tier
 
 **Provider Selection Criteria:**
 - User brings their own API key (zero cost to app/developer)
@@ -832,82 +905,97 @@ Users can choose from multiple popular AI APIs (bring your own API key):
 - Good performance for diary/text improvement tasks
 - Privacy-conscious options available
 
-#### Technical Implementation Plan
+#### Technical Implementation
 
-**Architecture:**
+**Architecture (Implemented):**
 ```
 ┌─────────────────────────────────────────────────┐
 │            NoteItUP Diary App                   │
 │  ┌───────────────────────────────────────────┐  │
-│  │     Editor Screen / Chat Interface        │  │
+│  │     Editor Screen with AI Toolbar         │  │
+│  │  - AIToolbar composable                   │  │
+│  │  - AISuggestionDialog                     │  │
+│  │  - AI Settings navigation                 │  │
 │  └──────────────┬────────────────────────────┘  │
 │                 │                                │
 │  ┌──────────────▼────────────────────────────┐  │
-│  │      AI Service (Use Cases)               │  │
-│  │  - TextImprovementUseCase                 │  │
-│  │  - BrainstormingChatUseCase               │  │
+│  │      EditorViewModel                      │  │
+│  │  - ImproveTextUseCase                     │  │
+│  │  - Handles improvement types              │  │
+│  │  - State management (loading, success)    │  │
 │  └──────────────┬────────────────────────────┘  │
 │                 │                                │
 │  ┌──────────────▼────────────────────────────┐  │
-│  │   AI API Service (expect/actual)          │  │
-│  │  - API key management                     │  │
-│  │  - HTTP client with retry logic           │  │
-│  │  - Response parsing & streaming           │  │
-│  │  - Context management                     │  │
+│  │   AIService (data/ai/AIService.kt)        │  │
+│  │  - Multi-provider support                 │  │
+│  │  - OpenAI-compatible API client           │  │
+│  │  - Gemini API client (special format)     │  │
+│  │  - HTTP client (Ktor)                     │  │
+│  │  - Error handling & logging               │  │
 │  └──────────────┬────────────────────────────┘  │
 │                 │                                │
 │  ┌──────────────▼────────────────────────────┐  │
-│  │    Platform-Specific HTTP & Storage       │  │
-│  │  Android: Ktor + OkHttp                   │  │
-│  │  iOS: Ktor + Darwin                       │  │
-│  │  Desktop: Ktor + Java                     │  │
-│  └───────────────────────────────────────────┘  │
+│  │   AISettingsRepository                    │  │
+│  │  - Secure API key storage                 │  │
+│  │  - Provider & model selection             │  │
+│  │  - Settings persistence                   │  │
+│  └──────────────┬────────────────────────────┘  │
 │                 │                                │
 │                 ▼                                │
 │        ☁️ User's AI Provider                    │
-│     (OpenAI / Claude / Gemini / etc.)          │
+│     (Groq / OpenAI / Gemini / Claude)          │
 └─────────────────────────────────────────────────┘
 ```
 
+**Key Components Implemented:**
+
+| Component | File | Description |
+|-----------|------|-------------|
+| `AIService` | `data/ai/AIService.kt` | Multi-provider AI API client with streaming support |
+| `AIModels` | `data/ai/AIModels.kt` | Data models for AI requests/responses (OpenAI + Gemini formats) |
+| `ImprovementType` | `data/ai/AIModels.kt` | Enum defining 8 improvement types with system prompts |
+| `AIProvider` | `domain/model/AIProvider.kt` | Enum of supported providers with base URLs and models |
+| `AISettings` | `domain/model/AIProvider.kt` | Settings data class with provider, key, model selection |
+| `AISettingsRepository` | `data/repository/AISettingsRepositoryImpl.kt` | Persists AI settings with secure key storage |
+| `ImproveTextUseCase` | `domain/usecase/ImproveTextUseCase.kt` | Business logic for text improvement |
+| `AISettingsViewModel` | `presentation/screens/aisettings/` | ViewModel for AI settings screen |
+| `AISettingsScreen` | `presentation/screens/aisettings/` | UI for provider selection, API key, connection test |
+| `AIToolbar` | `presentation/components/AIToolbar.kt` | Horizontal chip list for improvement type selection |
+| `AISuggestionDialog` | `presentation/components/AISuggestionDialog.kt` | Dialog showing AI improvement result |
+
 **Key Technologies:**
-- **Ktor Client**: Cross-platform HTTP client for API calls
-  - Already used in Phase 6 (Cloud Sync)
-  - Supports request/response streaming
-  - Built-in retry and timeout handling
-- **kotlinx.serialization**: JSON parsing for API responses
-- **Encrypted Preferences**: Secure API key storage
-  - Android: EncryptedSharedPreferences
-  - iOS: Keychain Services
-  - JVM: Platform-specific secure storage
-- **OpenAI-compatible API**: Standard format used by most providers
+- **Ktor Client**: Cross-platform HTTP client for API calls (already used in Phase 6)
+- **kotlinx.serialization**: JSON parsing for OpenAI and Gemini API responses
+- **Encrypted Preferences**: Secure API key storage (platform-specific via expect/actual)
+- **Koin DI**: Dependency injection for AI services and use cases
 
 #### Features Breakdown
 
-**Settings Screen Additions:**
-- [ ] AI provider selection (OpenAI, Claude, Gemini, Groq, etc.)
-- [ ] API key management with secure storage
-- [ ] Model selection per provider (e.g., GPT-4o vs GPT-4o-mini)
-- [ ] Provider connection test
-- [ ] Enable/disable AI features toggle
+**AI Settings Screen (Completed):**
+- ✅ AI provider selection (OpenAI, Claude, Gemini, Groq, OpenRouter, Together AI)
+- ✅ API key management with secure storage
+- ✅ Model selection per provider (GPT-4o, GPT-4o-mini, Claude Haiku, etc.)
+- ✅ Provider connection test with status feedback
+- ✅ Enable/disable AI features toggle
+- ✅ Auto-clear API key when switching providers
+- ✅ Visual provider cards with descriptions
+
+**Editor Integration (Completed):**
+- ✅ AI Toolbar component with horizontal scrollable chips
+- ✅ 8 improvement type options (journal, grammar, clarity, shorter, expand, professional, casual, summarize)
+- ✅ AI suggestion dialog with improved text preview
+- ✅ Accept suggestion replaces editor content
+- ✅ Loading state with progress indicator
+- ✅ Error handling with user-friendly messages
+- ✅ Streaming response support (infrastructure ready)
+
+**Pending Features:**
+- [ ] Inline diff view for suggestions (side-by-side comparison)
+- [ ] Undo/redo for AI suggestions
 - [ ] Usage tracking (token counts, cost estimates)
-- [ ] Privacy notice and data handling disclosure
-
-**Editor Enhancements:**
-- [ ] "Improve Text" button with AI suggestions
-- [ ] Context menu actions (improve, rephrase, expand, shorten)
-- [ ] Tone adjustment options (formal, casual, concise, creative)
-- [ ] Grammar and spelling correction with inline suggestions
-- [ ] Accept/reject suggestion UI with diff view
-- [ ] Batch improvement for entire entry
-- [ ] Streaming response display with cancel option
-
-**Brainstorming Chat:**
-- [ ] Dedicated chat interface with AI assistant
-- [ ] Conversation history (session-based, stored locally)
-- [ ] Quick prompts (reflection questions, creative prompts, journaling ideas)
-- [ ] Insert chat responses directly into diary entry
-- [ ] Context awareness (can reference previous diary entries with user permission)
-- [ ] Provider and model switching within chat
+- [ ] Brainstorming chat interface
+- [ ] Conversation history storage
+- [ ] Context awareness (reference previous entries)
 
 #### BYOK (Bring Your Own Key) Advantages
 
@@ -957,34 +1045,63 @@ Users can choose from multiple popular AI APIs (bring your own API key):
 
 #### Implementation Phases
 
-**Phase 8.1 - API Key Management & Settings**
-1. Create AI settings repository with secure storage
-2. Implement API key input and validation UI
-3. Add provider selection (OpenAI, Claude, Gemini, Groq, etc.)
-4. Implement connection test functionality
-5. Set up Ktor HTTP client with proper configuration
+**Phase 8.1 - API Key Management & Settings (✅ Completed)**
+- ✅ Created AISettingsRepository with secure storage
+- ✅ Implemented API key input and validation UI
+- ✅ Added provider selection (OpenAI, Claude, Gemini, Groq, OpenRouter, Together AI)
+- ✅ Implemented connection test functionality
+- ✅ Set up Ktor HTTP client with proper configuration
 
-**Phase 8.2 - Text Improvement Use Cases**
-1. Design AI service architecture (expect/actual pattern)
-2. Implement OpenAI-compatible API client
-3. Create text improvement use cases (grammar, style, tone)
-4. Build suggestion UI in editor with accept/reject
-5. Add streaming response support
+**Phase 8.2 - Text Improvement Use Cases (✅ Completed)**
+- ✅ Designed AI service architecture for multi-provider support
+- ✅ Implemented OpenAI-compatible API client
+- ✅ Implemented Gemini-specific API client (different format)
+- ✅ Created 8 text improvement types (grammar, style, tone, journal-specific, etc.)
+- ✅ Built AIToolbar and AISuggestionDialog in editor
+- ✅ Added streaming response support infrastructure
 
-**Phase 8.3 - Brainstorming Chat Interface**
-1. Design chat UI with conversation history
-2. Implement chat use case with context management
-3. Create journaling prompts library
-4. Add ability to insert AI responses into entries
-5. Support for referencing previous diary entries (with permission)
+**Phase 8.3 - Brainstorming Chat Interface (⏳ Pending)**
+- [ ] Design chat UI with conversation history
+- [ ] Implement chat use case with context management
+- [ ] Create journaling prompts library
+- [ ] Add ability to insert AI responses into entries
+- [ ] Support for referencing previous diary entries (with permission)
 
-**Phase 8.4 - Provider Support & Polish**
-1. Add support for multiple providers (Claude, Gemini, Groq)
-2. Implement token counting and cost estimation
-3. Add provider-specific model selection
-4. Performance optimization and error handling refinement
-5. Comprehensive testing across platforms and providers
-6. Documentation and user guide
+**Phase 8.4 - Provider Support & Polish (✅ Mostly Completed)**
+- ✅ Added support for 6 providers (OpenAI, Claude, Gemini, Groq, OpenRouter, Together AI)
+- ✅ Implemented provider-specific model selection
+- ✅ Error handling with detailed logging
+- ✅ Fixed Gemini API format compatibility
+- ✅ Set Groq as default provider
+- ✅ UI improvements (LazyRow, unified chip styling, aligned toolbar buttons)
+- [ ] Token counting and cost estimation (pending)
+- [ ] Comprehensive cross-platform testing (pending)
+
+#### How to Use AI Features
+
+**Setup (One-time):**
+1. Navigate to Settings → AI Settings (or tap AI icon in Editor when AI is disabled)
+2. Select your preferred AI provider (Groq recommended for free tier)
+3. Enter your API key from the provider's website
+4. (Optional) Choose a specific model for the provider
+5. Tap "Test Connection" to verify setup
+6. Enable AI features toggle
+
+**Using AI in Editor:**
+1. Write or select text in the diary entry editor
+2. Scroll through the AI toolbar below the editor
+3. Tap any improvement type chip (e.g., "Improve for Journal", "Fix Grammar")
+4. Wait for AI to process (loading indicator shown)
+5. Review the suggested improvement in the dialog
+6. Tap "Accept" to replace your text, or "Cancel" to dismiss
+
+**Getting API Keys:**
+- **Groq** (recommended): https://console.groq.com/keys - Generous free tier
+- **Google Gemini**: https://aistudio.google.com/apikey - 15 requests/minute free
+- **OpenAI**: https://platform.openai.com/api-keys - Paid only
+- **Anthropic Claude**: https://console.anthropic.com/settings/keys - Paid only
+- **OpenRouter**: https://openrouter.ai/keys - Some free models available
+- **Together AI**: https://api.together.xyz/settings/api-keys - $25 free credit
 
 ---
 
@@ -1016,11 +1133,234 @@ Open `iosApp/iosApp.xcodeproj` in Xcode and run.
 
 ---
 
-*This document reflects the current implementation as of Phase 7 (mostly complete). Phases 1-6 are fully implemented. Phase 7 (Day One and Joplin import) is functional on Android and Desktop platforms, with iOS TarExtractor implementation pending for Joplin support on iOS.*
+## Platform Feature Parity
+
+### Feature Comparison: Android vs Desktop (JVM) vs iOS
+
+#### ✅ **Fully Implemented on All Platforms**
+
+| Feature | Android | Desktop (JVM) | iOS | Notes |
+|---------|---------|---------------|-----|-------|
+| Core Diary Features | ✅ | ✅ | ✅ | Entries, folders, tags, favorites, moods |
+| Rich Text Editor (WYSIWYG) | ✅ | ✅ | ✅ | Markdown with live preview |
+| Search | ✅ | ✅ | ✅ | Full-text search across entries |
+| Calendar View | ✅ | ✅ | ✅ | Monthly calendar with entry indicators |
+| Statistics | ✅ | ✅ | ✅ | Mood distribution, streaks, word counts |
+| Export/Import | ✅ | ✅ | ✅ | JSON, CSV, Markdown formats |
+| Day One Import | ✅ | ✅ | ✅ | ZIP with JSON + photos |
+| Image Attachments | ✅ | ✅ | ✅ | Gallery picker with thumbnails |
+| PIN Security | ✅ | ✅ | ✅ | 4-6 digit PIN lock |
+| Cloud Sync | ✅ | ✅ | ✅ | Dropbox & Google Drive with AES-256-GCM encryption |
+| AI Writing Assistant | ✅ | ✅ | ✅ | 8 improvement types, 6 providers (Groq, OpenAI, etc.) |
+| Themes | ✅ | ✅ | ✅ | Light/Dark/System with 6 accent colors |
+| Database | ✅ | ✅ | ✅ | SQLDelight with platform-specific drivers |
+
+#### ⚠️ **Platform-Specific Implementations**
+
+| Feature | Android | Desktop (JVM) | iOS | Implementation Differences |
+|---------|---------|---------------|-----|---------------------------|
+| Multi-Window Support | ❌ Single activity | ✅ Full support | ❌ Single window | Desktop can open multiple windows with menu bar |
+| Joplin Import | ✅ Apache Commons | ✅ Apache Commons | ⏳ Pending | iOS needs TAR library |
+| URL Opening | Chrome Custom Tabs | Desktop.browse() | UIApplication | Android has in-app browser |
+| Image Picker | Photo Picker API | Swing JFileChooser | PHPicker | Platform-native pickers |
+| File Picker | System Picker | Swing JFileChooser | UIDocument | Platform-native pickers |
+| OAuth | System Browser | localhost redirect | UIApplication | Desktop uses localhost:8080 |
+
+#### ❌ **Hardware/Platform-Dependent Features**
+
+| Feature | Android | Desktop (JVM) | iOS | Availability Reason |
+|---------|---------|---------------|-----|---------------------|
+| Camera Capture | ✅ | ❌ | ✅ | Desktops lack accessible camera APIs |
+| Biometric Auth | ✅ Fingerprint/Face | ❌ Not available | ✅ Face ID/Touch ID | Desktop hardware limitation |
+| Location Tagging | ✅ GPS + Geocoding | ❌ Not available | ✅ GPS + Geocoding | Desktops don't have GPS |
+| Daily Reminders | ✅ System notifications | ❌ Not implemented | ✅ System notifications | Could add system tray on Desktop |
+| Firebase Analytics | ✅ Full tracking | ❌ Stub only | ✅ Full tracking | Analytics primarily for mobile |
+
+---
+
+### Desktop (JVM) Specific Details
+
+#### **What Works on Desktop** ✅
+
+**Full Feature Parity:**
+- ✅ Complete diary editing and organization
+- ✅ All import/export capabilities (JSON, CSV, Markdown, Day One)
+- ✅ Joplin import (TAR extraction via Apache Commons Compress)
+- ✅ AI writing assistant with all providers
+- ✅ Cloud sync with Dropbox and Google Drive
+- ✅ PIN security with auto-lock
+- ✅ Image attachments via file picker
+- ✅ Complete data management and backup
+
+**Desktop Advantages:**
+- 🖥️ Larger screen for comfortable writing
+- ⌨️ Full keyboard for faster typing
+- 💾 Direct file system access for exports
+- 📂 Multi-window support (open multiple entries, calendar, settings in separate windows)
+- 🍔 Menu bar integration for quick access to all features
+- 🔗 Standard browser opening for AI API key URLs
+
+#### **Desktop-Specific Implementations**
+
+**File Management:**
+```kotlin
+// Desktop uses Swing JFileChooser for native file dialogs
+val fileChooser = JFileChooser().apply {
+    dialogTitle = "Select Image"
+    fileSelectionMode = JFileChooser.FILES_ONLY
+}
+```
+
+**Storage Location:**
+- Database: `~/.noteitup/noteitup.db`
+- Images: `~/.noteitup/images/`
+- Thumbnails: `~/.noteitup/thumbnails/`
+- Preferences: Java Preferences API
+
+**OAuth Flow:**
+```kotlin
+// Desktop uses localhost redirect for OAuth
+redirectUri = "http://localhost:8080/oauth2callback"
+// Opens system browser, waits for callback on local server
+```
+
+**TAR Extraction:**
+```kotlin
+// Desktop uses Apache Commons Compress (same as Android)
+TarArchiveInputStream(FileInputStream(tarPath)).use { tar ->
+    // Extract Joplin JEX files
+}
+```
+
+#### **What's Different on Desktop** ⚠️
+
+**Image Capture:**
+- ❌ No camera support (expected - desktops don't have accessible cameras)
+- ✅ Alternative: Use file picker to select existing images
+- ✅ Full thumbnail generation support
+
+**Security:**
+- ❌ No biometric authentication (hardware limitation)
+- ✅ PIN lock works perfectly as alternative
+- ✅ Auto-lock timeout settings available
+
+**Location:**
+- ❌ No GPS location tagging (desktops don't have GPS)
+- ✅ Users can manually add location text if needed
+
+**Notifications:**
+- ❌ Daily reminders not implemented
+- 💡 Future: Could add system tray notifications on Windows/Mac/Linux
+
+#### **Desktop Multi-Window Support** ✅ (Implemented)
+
+The Desktop version now supports multiple windows for a true desktop experience:
+
+**Features:**
+- ✅ Menu bar with File, Window, and Help menus
+- ✅ Open any screen in a separate window (Calendar, Statistics, Search, Tags, Folders, AI Settings, Cloud Sync)
+- ✅ Create multiple editor windows for side-by-side viewing
+- ✅ Single-instance enforcement for utility windows (only one Calendar, Settings, etc.)
+- ✅ Independent window sizing per window type
+- ✅ Proper window lifecycle management
+
+**Implementation:**
+- `WindowManager.kt`: Manages window state with StateFlow
+- `WindowContent.kt`: Renders content for each window type
+- `main.kt`: Menu bar integration and dynamic window creation
+- `DesktopWindow` sealed class: Type-safe window definitions
+
+**Usage:**
+- Use the Window menu to open different screens
+- File → New Entry in Window: Opens a new editor window
+- Each window has its own ViewModels via Koin injection
+- Windows can be closed independently without affecting others
+
+**Architecture:**
+```kotlin
+sealed class DesktopWindow(
+    val id: String = UUID.randomUUID().toString(),
+    val singleInstance: Boolean = false
+) {
+    data class Editor(entryId: String?, isNewEntry: Boolean)
+    data object Calendar : DesktopWindow(singleInstance = true)
+    data object Statistics : DesktopWindow(singleInstance = true)
+    // ... other window types
+}
+```
+
+#### **Desktop-Only Potential Enhancements** 💡
+
+**Planned Future Features:**
+1. **System Tray Integration**
+   - Quick capture from system tray
+   - Notification support for reminders
+   - Global keyboard shortcuts
+
+2. **Enhanced Keyboard Shortcuts**
+   - Ctrl/Cmd+N: New entry in new window
+   - Ctrl/Cmd+S: Save entry
+   - Ctrl/Cmd+F: Search
+   - Ctrl/Cmd+E: Export
+   - Ctrl/Cmd+W: Close current window
+   - Ctrl/Cmd+Shift+W: Close all windows
+
+3. **Advanced Multi-Window Features**
+   - Drag-and-drop between windows
+   - Window state persistence (remember positions/sizes)
+   - Tabbed windows option
+
+4. **Desktop-Specific Features**
+   - Markdown file import from file system
+   - Drag-and-drop image attachment
+   - Integration with desktop search (Spotlight/Windows Search)
+
+---
+
+### Platform Recommendation
+
+**For Desktop Users:**
+
+Desktop version is **fully functional** for journaling with the following notes:
+
+✅ **Use Desktop If:**
+- You prefer typing on a full keyboard
+- You want larger screen for writing
+- You need direct file system access
+- You work primarily from a computer
+
+⚠️ **Desktop Limitations (Expected):**
+- No camera for photo capture (use file picker instead)
+- No GPS location tagging (manual entry if needed)
+- No biometric unlock (PIN works great)
+- No daily notification reminders (set system reminder separately)
+
+**Bottom Line:** Desktop version has complete feature parity for core diary functionality. The missing features are hardware-dependent and not critical for a great journaling experience.
+
+---
+
+*This document reflects the current implementation as of Phase 8 (AI Integration - completed) plus Desktop Multi-Window Support. Phases 1-6 are fully implemented. Phase 7 (Day One and Joplin import) is functional on Android and Desktop platforms, with iOS TarExtractor implementation pending for Joplin support on iOS. Phase 7.5 (WYSIWYG Markdown Editor) and Phase 8 (API-Based AI Integration) are completed. Desktop multi-window support has been implemented with menu bar integration.*
 
 ---
 
 ## Known Limitations & Pending Work
+
+### Critical UX Improvements
+
+**High Priority:**
+1. **Unsaved Changes Dialog on Editor Back Button** ⚠️ IMPORTANT
+   - **Problem:** Users can accidentally lose unsaved work when pressing back button
+   - **Solution:** Show confirmation dialog when back button is pressed with unsaved changes
+   - **Dialog Options:**
+     - "Save" - Save changes and navigate back
+     - "Discard" - Discard changes and navigate back
+     - "Cancel" - Stay on editor screen
+   - **Implementation Details:**
+     - Detect unsaved changes by comparing current editor state with loaded entry state
+     - Track changes in title, content, mood, tags, folder, images, location, and favorite status
+     - Show dialog only if there are actual changes (not on new empty entries)
+     - Debounce back button to prevent multiple rapid taps causing white screen issues
+   - **Status:** ⏳ Pending implementation
 
 ### Phase 7 Remaining Tasks
 
@@ -1046,3 +1386,26 @@ Open `iosApp/iosApp.xcodeproj` in Xcode and run.
    - Test with 1000+ entry imports
    - Optimize batch database operations
    - Add progress indicators for long-running imports
+
+### Phase 8 Remaining Tasks
+
+**High Priority:**
+1. **Brainstorming Chat Interface**
+   - Design chat UI with conversation history
+   - Implement chat use case with context management
+   - Create journaling prompts library
+   - Add ability to insert AI responses into entries
+
+**Medium Priority:**
+2. **Advanced Features**
+   - Token counting and cost estimation
+   - Diff view for AI suggestions (side-by-side comparison)
+   - Undo/redo for AI suggestions
+   - Usage analytics and cost tracking
+
+**Low Priority:**
+3. **Enhancements**
+   - Context awareness (reference previous diary entries)
+   - Multi-language support for AI prompts
+   - Advanced prompt templates library
+   - Comprehensive cross-platform testing

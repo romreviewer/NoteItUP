@@ -12,6 +12,8 @@ import com.romreviewertools.noteitup.data.media.ImagePicker
 import com.romreviewertools.noteitup.data.notification.NotificationManager
 import com.romreviewertools.noteitup.data.security.BiometricAuthenticator
 import com.romreviewertools.noteitup.data.preferences.PreferencesStorage
+import com.romreviewertools.noteitup.util.UrlOpener
+import com.romreviewertools.noteitup.window.WindowManager
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.java.Java
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -32,6 +34,8 @@ val jvmModule = module {
     single { EncryptionService() }
     single { ImagePicker() }
     single { LocationService() }
+    single { UrlOpener() }
+    single { WindowManager() }
     single {
         HttpClient(Java) {
             install(ContentNegotiation) {

@@ -27,5 +27,9 @@ data class EditorUiState(
     // Location
     val location: Location? = null,
     val isLoadingLocation: Boolean = false,
-    val isLocationAvailable: Boolean = true
+    val isLocationAvailable: Boolean = true,
+    // AI
+    val isImprovingText: Boolean = false,
+    val aiSuggestion: String? = null,
+    val aiError: String? = null
 )

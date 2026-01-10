@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -67,6 +68,7 @@ fun SettingsScreen(
     onExportClick: () -> Unit = {},
     onSecurityClick: () -> Unit = {},
     onCloudSyncClick: () -> Unit = {},
+    onAISettingsClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -169,6 +171,16 @@ fun SettingsScreen(
                     )
                 }
 
+                // AI Features Section
+                SettingsSection(title = "AI Features") {
+                    SettingsNavigationItem(
+                        icon = Icons.Default.Psychology,
+                        title = "AI Writing Assistant",
+                        subtitle = "Configure AI providers and API keys",
+                        onClick = onAISettingsClick
+                    )
+                }
+
                 // Data Section
                 SettingsSection(title = "Data") {
                     SettingsNavigationItem(
@@ -196,6 +208,7 @@ fun SettingsContent(
     onExportClick: () -> Unit,
     onSecurityClick: () -> Unit = {},
     onCloudSyncClick: () -> Unit = {},
+    onAISettingsClick: () -> Unit = {},
     paddingValues: PaddingValues,
     modifier: Modifier = Modifier
 ) {
@@ -312,6 +325,16 @@ fun SettingsContent(
                     title = "App Lock",
                     subtitle = "Protect your diary with PIN or biometrics",
                     onClick = onSecurityClick
+                )
+            }
+
+            // AI Features Section
+            SettingsSection(title = "AI Features") {
+                SettingsNavigationItem(
+                    icon = Icons.Default.Psychology,
+                    title = "AI Writing Assistant",
+                    subtitle = "Configure AI providers and API keys",
+                    onClick = onAISettingsClick
                 )
             }
 

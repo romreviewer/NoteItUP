@@ -32,6 +32,8 @@ import com.romreviewertools.noteitup.presentation.screens.security.SecuritySetti
 import com.romreviewertools.noteitup.presentation.screens.security.SecurityViewModel
 import com.romreviewertools.noteitup.presentation.screens.cloudsync.CloudSyncScreen
 import com.romreviewertools.noteitup.presentation.screens.cloudsync.CloudSyncViewModel
+import com.romreviewertools.noteitup.presentation.screens.aisettings.AISettingsScreen
+import com.romreviewertools.noteitup.presentation.screens.aisettings.AISettingsViewModel
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -82,6 +84,9 @@ fun AppNavigation(
                 },
                 onCloudSyncClick = {
                     navController.navigate(Routes.CloudSync)
+                },
+                onAISettingsClick = {
+                    navController.navigate(Routes.AISettings)
                 }
             )
         }
@@ -106,6 +111,9 @@ fun AppNavigation(
                 entryId = null,
                 onNavigateBack = {
                     navController.popBackStack()
+                },
+                onNavigateToAISettings = {
+                    navController.navigate(Routes.AISettings)
                 }
             )
         }
@@ -118,6 +126,9 @@ fun AppNavigation(
                 entryId = route.entryId,
                 onNavigateBack = {
                     navController.popBackStack()
+                },
+                onNavigateToAISettings = {
+                    navController.navigate(Routes.AISettings)
                 }
             )
         }
@@ -178,8 +189,14 @@ fun AppNavigation(
                 onExportClick = {
                     navController.navigate(Routes.Export)
                 },
+                onSecurityClick = {
+                    navController.navigate(Routes.Security)
+                },
                 onCloudSyncClick = {
                     navController.navigate(Routes.CloudSync)
+                },
+                onAISettingsClick = {
+                    navController.navigate(Routes.AISettings)
                 }
             )
         }
@@ -222,6 +239,16 @@ fun AppNavigation(
         composable<Routes.CloudSync> {
             val viewModel = koinViewModel<CloudSyncViewModel>()
             CloudSyncScreen(
+                viewModel = viewModel,
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable<Routes.AISettings> {
+            val viewModel = koinViewModel<AISettingsViewModel>()
+            AISettingsScreen(
                 viewModel = viewModel,
                 onNavigateBack = {
                     navController.popBackStack()

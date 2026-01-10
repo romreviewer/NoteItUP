@@ -11,6 +11,7 @@ import com.romreviewertools.noteitup.domain.usecase.CreateEntryUseCase
 import com.romreviewertools.noteitup.domain.usecase.GetAllFoldersUseCase
 import com.romreviewertools.noteitup.domain.usecase.GetAllTagsUseCase
 import com.romreviewertools.noteitup.domain.usecase.GetEntryByIdUseCase
+import com.romreviewertools.noteitup.domain.usecase.ImproveTextUseCase
 import com.romreviewertools.noteitup.domain.usecase.UpdateEntryUseCase
 import com.romreviewertools.noteitup.data.media.ImagePicker
 import com.romreviewertools.noteitup.data.media.ImagePickerResult
@@ -31,6 +32,7 @@ class EditorViewModel(
     private val updateEntryUseCase: UpdateEntryUseCase,
     private val getAllTagsUseCase: GetAllTagsUseCase,
     private val getAllFoldersUseCase: GetAllFoldersUseCase,
+    private val improveTextUseCase: ImproveTextUseCase,
     private val repository: DiaryRepository,
     private val imagePicker: ImagePicker,
     private val locationService: LocationService
@@ -94,6 +96,10 @@ class EditorViewModel(
             // Location intents
             is EditorIntent.AddLocation -> addLocation()
             is EditorIntent.RemoveLocation -> removeLocation()
+            // AI intents
+            is EditorIntent.ImproveText -> improveText(intent.improvementType)
+            is EditorIntent.DismissAISuggestion -> dismissAISuggestion()
+            is EditorIntent.AcceptAISuggestion -> acceptAISuggestion()
         }
     }
 
@@ -384,5 +390,58 @@ class EditorViewModel(
 
     private fun dismissError() {
         _uiState.update { it.copy(error = null) }
+    }
+
+    private fun improveText(improvementType: com.romreviewertools.noteitup.data.ai.ImprovementType) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isImprovingText = true, aiError = null, aiSuggestion = null) }
+
+            try {
+                val textToImprove = _uiState.value.content
+                if (textToImprove.isBlank()) {
+                    _uiState.update {
+                        it.copy(
+                            isImprovingText = false,
+                            aiError = "Please enter some text first"
+                        )
+                    }
+                    return@launch
+                }
+
+                val result = improveTextUseCase(textToImprove, improvementType)
+
+                _uiState.update {
+                    it.copy(
+                        isImprovingText = false,
+                        aiSuggestion = result.getOrNull(),
+                        aiError = result.exceptionOrNull()?.message
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isImprovingText = false,
+                        aiError = e.message ?: "Failed to improve text"
+                    )
+                }
+            }
+        }
+    }
+
+    private fun dismissAISuggestion() {
+        _uiState.update { it.copy(aiSuggestion = null, aiError = null) }
+    }
+
+    private fun acceptAISuggestion() {
+        val suggestion = _uiState.value.aiSuggestion
+        if (suggestion != null) {
+            _uiState.update {
+                it.copy(
+                    content = suggestion,
+                    aiSuggestion = null,
+                    aiError = null
+                )
+            }
+        }
     }
 }

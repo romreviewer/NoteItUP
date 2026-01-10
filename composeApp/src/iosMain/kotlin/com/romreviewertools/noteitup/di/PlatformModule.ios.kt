@@ -12,6 +12,7 @@ import com.romreviewertools.noteitup.data.media.ImagePicker
 import com.romreviewertools.noteitup.data.notification.NotificationManager
 import com.romreviewertools.noteitup.data.security.BiometricAuthenticator
 import com.romreviewertools.noteitup.data.preferences.PreferencesStorage
+import com.romreviewertools.noteitup.util.UrlOpener
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.darwin.Darwin
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -32,6 +33,7 @@ val iosModule = module {
     single { EncryptionService() }
     single { ImagePicker() }
     single { LocationService() }
+    single { UrlOpener() }
     single {
         HttpClient(Darwin) {
             install(ContentNegotiation) {

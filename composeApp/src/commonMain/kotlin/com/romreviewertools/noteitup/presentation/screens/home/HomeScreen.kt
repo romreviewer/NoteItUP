@@ -70,6 +70,7 @@ fun HomeScreen(
     onStatisticsClick: () -> Unit,
     onSecurityClick: () -> Unit = {},
     onCloudSyncClick: () -> Unit = {},
+    onAISettingsClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -146,6 +147,7 @@ fun HomeScreen(
                     onExportClick = onExportClick,
                     onSecurityClick = onSecurityClick,
                     onCloudSyncClick = onCloudSyncClick,
+                    onAISettingsClick = onAISettingsClick,
                     paddingValues = paddingValues
                 )
             }

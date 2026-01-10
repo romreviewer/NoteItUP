@@ -37,6 +37,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.LocationOn
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -48,9 +49,12 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -68,14 +72,17 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mohamedrejeb.richeditor.model.rememberRichTextState
 import com.mohamedrejeb.richeditor.ui.material3.RichTextEditor
+import com.romreviewertools.noteitup.data.ai.ImprovementType
 import com.romreviewertools.noteitup.domain.model.Folder
 import com.romreviewertools.noteitup.domain.model.ImageAttachment
 import com.romreviewertools.noteitup.domain.model.Location
 import com.romreviewertools.noteitup.domain.model.Mood
 import com.romreviewertools.noteitup.domain.model.Tag
+import com.romreviewertools.noteitup.presentation.components.AIToolbar
 import com.romreviewertools.noteitup.presentation.components.ImagePreview
 import com.romreviewertools.noteitup.presentation.components.MediaPermissionHandler
 import com.romreviewertools.noteitup.presentation.components.RichTextToolbar
+import com.romreviewertools.noteitup.util.PlatformCapabilities
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -83,6 +90,7 @@ fun EditorScreen(
     viewModel: EditorViewModel,
     entryId: String?,
     onNavigateBack: () -> Unit,
+    onNavigateToAISettings: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -93,6 +101,9 @@ fun EditorScreen(
 
     // Options panel expanded state (collapsed by default to give more writing space)
     var isOptionsExpanded by remember { mutableStateOf(false) }
+
+    // Debounce navigation to prevent multiple rapid taps
+    var isNavigating by remember { mutableStateOf(false) }
 
     // Sync when content changes from ViewModel (e.g., when loading entry)
     LaunchedEffect(uiState.content) {
@@ -108,7 +119,8 @@ fun EditorScreen(
     }
 
     LaunchedEffect(uiState.isSaved) {
-        if (uiState.isSaved) {
+        if (uiState.isSaved && !isNavigating) {
+            isNavigating = true
             onNavigateBack()
         }
     }
@@ -117,6 +129,20 @@ fun EditorScreen(
         uiState.error?.let { error ->
             snackbarHostState.showSnackbar(error)
             viewModel.processIntent(EditorIntent.DismissError)
+        }
+    }
+
+    LaunchedEffect(uiState.aiError) {
+        uiState.aiError?.let { error ->
+            val result = snackbarHostState.showSnackbar(
+                message = error,
+                actionLabel = "Settings",
+                duration = SnackbarDuration.Long
+            )
+            if (result == SnackbarResult.ActionPerformed) {
+                onNavigateToAISettings()
+            }
+            viewModel.processIntent(EditorIntent.DismissAISuggestion)
         }
     }
 
@@ -141,7 +167,14 @@ fun EditorScreen(
                     Text(if (uiState.isNewEntry) "New Entry" else "Edit Entry")
                 },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
+                    IconButton(
+                        onClick = {
+                            if (!isNavigating) {
+                                isNavigating = true
+                                onNavigateBack()
+                            }
+                        }
+                    ) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back"
@@ -160,11 +193,13 @@ fun EditorScreen(
                     }
                     IconButton(
                         onClick = {
-                            // Save markdown content from rich text editor
-                            viewModel.processIntent(EditorIntent.UpdateContent(richTextState.toMarkdown()))
-                            viewModel.processIntent(EditorIntent.Save)
+                            if (!isNavigating && !uiState.isSaving) {
+                                // Save markdown content from rich text editor
+                                viewModel.processIntent(EditorIntent.UpdateContent(richTextState.toMarkdown()))
+                                viewModel.processIntent(EditorIntent.Save)
+                            }
                         },
-                        enabled = !uiState.isSaving
+                        enabled = !uiState.isSaving && !isNavigating
                     ) {
                         if (uiState.isSaving) {
                             CircularProgressIndicator(
@@ -228,6 +263,19 @@ fun EditorScreen(
                 // Rich text formatting toolbar
                 RichTextToolbar(
                     richTextState = richTextState,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // AI improvement toolbar
+                AIToolbar(
+                    onImprovementSelected = { improvementType: ImprovementType ->
+                        // Save current content before improving
+                        viewModel.processIntent(EditorIntent.UpdateContent(richTextState.toMarkdown()))
+                        viewModel.processIntent(EditorIntent.ImproveText(improvementType))
+                    },
+                    isLoading = uiState.isImprovingText,
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -438,8 +486,8 @@ fun EditorScreen(
                             onRemoveImage = { imageId -> viewModel.processIntent(EditorIntent.RemoveImage(imageId)) }
                         )
 
-                        // Location section
-                        if (uiState.isLocationAvailable) {
+                        // Location section - only show on platforms with GPS support
+                        if (PlatformCapabilities.hasLocationSupport() && uiState.isLocationAvailable) {
                             Spacer(modifier = Modifier.height(16.dp))
 
                             LocationSection(
@@ -454,6 +502,20 @@ fun EditorScreen(
                     }
                 }
             }
+        }
+
+        // AI Suggestion Dialog
+        if (uiState.aiSuggestion != null) {
+            AISuggestionDialog(
+                suggestion = uiState.aiSuggestion!!,
+                onAccept = {
+                    viewModel.processIntent(EditorIntent.AcceptAISuggestion)
+                    richTextState.setMarkdown(uiState.aiSuggestion!!)
+                },
+                onDismiss = {
+                    viewModel.processIntent(EditorIntent.DismissAISuggestion)
+                }
+            )
         }
     }
     } // MediaPermissionHandler
@@ -579,17 +641,20 @@ private fun ImageAttachmentSection(
                 Text("Gallery")
             }
 
-            OutlinedButton(
-                onClick = onTakePhoto,
-                enabled = !isAddingImage
-            ) {
-                Icon(
-                    Icons.Default.AddAPhoto,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("Camera")
+            // Only show camera button on platforms that support it
+            if (PlatformCapabilities.hasCameraSupport()) {
+                OutlinedButton(
+                    onClick = onTakePhoto,
+                    enabled = !isAddingImage
+                ) {
+                    Icon(
+                        Icons.Default.AddAPhoto,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Camera")
+                }
             }
 
             if (isAddingImage) {
@@ -732,4 +797,54 @@ private fun LocationSection(
             }
         }
     }
+}
+
+@Composable
+private fun AISuggestionDialog(
+    suggestion: String,
+    onAccept: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text("AI Suggestion")
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+            ) {
+                Text(
+                    text = "AI has improved your text:",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    )
+                ) {
+                    Text(
+                        text = suggestion,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(12.dp)
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onAccept) {
+                Text("Accept")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Dismiss")
+            }
+        }
+    )
 }

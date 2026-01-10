@@ -41,4 +41,7 @@ sealed interface Routes {
 
     @Serializable
     data object CloudSync : Routes
+
+    @Serializable
+    data object AISettings : Routes
 }

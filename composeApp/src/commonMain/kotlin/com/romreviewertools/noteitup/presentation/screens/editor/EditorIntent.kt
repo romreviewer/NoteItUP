@@ -1,5 +1,6 @@
 package com.romreviewertools.noteitup.presentation.screens.editor
 
+import com.romreviewertools.noteitup.data.ai.ImprovementType
 import com.romreviewertools.noteitup.domain.model.Mood
 
 sealed interface EditorIntent {
@@ -23,4 +24,9 @@ sealed interface EditorIntent {
     // Location intents
     data object AddLocation : EditorIntent
     data object RemoveLocation : EditorIntent
+
+    // AI intents
+    data class ImproveText(val improvementType: ImprovementType) : EditorIntent
+    data object DismissAISuggestion : EditorIntent
+    data object AcceptAISuggestion : EditorIntent
 }

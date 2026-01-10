@@ -7,6 +7,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -57,9 +58,9 @@ fun RichTextToolbar(
         FormatButton(
             icon = Icons.Default.FormatBold,
             contentDescription = "Bold",
-            isActive = false,
+            isActive = richTextState.currentSpanStyle.fontWeight == androidx.compose.ui.text.font.FontWeight.Bold,
             onClick = {
-                richTextState.addSpanStyle(
+                richTextState.toggleSpanStyle(
                     androidx.compose.ui.text.SpanStyle(
                         fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
                     )
@@ -71,9 +72,9 @@ fun RichTextToolbar(
         FormatButton(
             icon = Icons.Default.FormatItalic,
             contentDescription = "Italic",
-            isActive = false,
+            isActive = richTextState.currentSpanStyle.fontStyle == androidx.compose.ui.text.font.FontStyle.Italic,
             onClick = {
-                richTextState.addSpanStyle(
+                richTextState.toggleSpanStyle(
                     androidx.compose.ui.text.SpanStyle(
                         fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
                     )
@@ -85,9 +86,9 @@ fun RichTextToolbar(
         FormatButton(
             icon = Icons.Default.FormatUnderlined,
             contentDescription = "Underline",
-            isActive = false,
+            isActive = richTextState.currentSpanStyle.textDecoration?.contains(androidx.compose.ui.text.style.TextDecoration.Underline) == true,
             onClick = {
-                richTextState.addSpanStyle(
+                richTextState.toggleSpanStyle(
                     androidx.compose.ui.text.SpanStyle(
                         textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline
                     )
@@ -95,14 +96,50 @@ fun RichTextToolbar(
             }
         )
 
+        // Clear Formatting
+        TextFormatButton(
+            text = "Clear",
+            contentDescription = "Clear Formatting",
+            onClick = {
+                // Remove all span styles by toggling them off
+                val currentStyle = richTextState.currentSpanStyle
+
+                // Remove bold if active
+                if (currentStyle.fontWeight == androidx.compose.ui.text.font.FontWeight.Bold) {
+                    richTextState.toggleSpanStyle(
+                        androidx.compose.ui.text.SpanStyle(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                    )
+                }
+
+                // Remove italic if active
+                if (currentStyle.fontStyle == androidx.compose.ui.text.font.FontStyle.Italic) {
+                    richTextState.toggleSpanStyle(
+                        androidx.compose.ui.text.SpanStyle(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
+                    )
+                }
+
+                // Remove underline if active
+                if (currentStyle.textDecoration?.contains(androidx.compose.ui.text.style.TextDecoration.Underline) == true) {
+                    richTextState.toggleSpanStyle(
+                        androidx.compose.ui.text.SpanStyle(textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline)
+                    )
+                }
+
+                // Reset to default font size (removes heading)
+                if (currentStyle.fontSize != androidx.compose.ui.unit.TextUnit.Unspecified) {
+                    richTextState.removeSpanStyle(
+                        androidx.compose.ui.text.SpanStyle(fontSize = currentStyle.fontSize)
+                    )
+                }
+            }
+        )
+
         // H1
         TextFormatButton(
             text = "H1",
             contentDescription = "Heading 1",
+            isActive = richTextState.currentSpanStyle.fontSize == 24.sp,
             onClick = {
-                richTextState.addParagraphStyle(
-                    androidx.compose.ui.text.ParagraphStyle()
-                )
                 richTextState.addSpanStyle(
                     androidx.compose.ui.text.SpanStyle(
                         fontSize = 24.sp,
@@ -116,6 +153,7 @@ fun RichTextToolbar(
         TextFormatButton(
             text = "H2",
             contentDescription = "Heading 2",
+            isActive = richTextState.currentSpanStyle.fontSize == 20.sp,
             onClick = {
                 richTextState.addSpanStyle(
                     androidx.compose.ui.text.SpanStyle(
@@ -130,6 +168,7 @@ fun RichTextToolbar(
         TextFormatButton(
             text = "H3",
             contentDescription = "Heading 3",
+            isActive = richTextState.currentSpanStyle.fontSize == 18.sp,
             onClick = {
                 richTextState.addSpanStyle(
                     androidx.compose.ui.text.SpanStyle(
@@ -257,14 +296,23 @@ private fun TextFormatButton(
     text: String,
     contentDescription: String,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isActive: Boolean = false
 ) {
     TextButton(
         onClick = onClick,
-        modifier = modifier,
+        modifier = modifier.height(40.dp),
         colors = androidx.compose.material3.ButtonDefaults.textButtonColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+            containerColor = if (isActive) {
+                MaterialTheme.colorScheme.primaryContainer
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant
+            },
+            contentColor = if (isActive) {
+                MaterialTheme.colorScheme.onPrimaryContainer
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            }
         )
     ) {
         Text(

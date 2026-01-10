@@ -16,47 +16,52 @@ actual class ImagePicker {
 
     private var pendingCallback: ((ImagePickerResult) -> Unit)? = null
 
-    actual suspend fun pickImageFromGallery(): ImagePickerResult = withContext(Dispatchers.IO) {
-        suspendCancellableCoroutine { continuation ->
-            val fileChooser = JFileChooser().apply {
-                dialogTitle = "Select Image"
-                fileSelectionMode = JFileChooser.FILES_ONLY
-                isAcceptAllFileFilterUsed = false
-                addChoosableFileFilter(
-                    FileNameExtensionFilter(
-                        "Image files",
-                        "jpg", "jpeg", "png", "gif", "bmp"
-                    )
-                )
-            }
-
-            val result = fileChooser.showOpenDialog(null)
-            when (result) {
-                JFileChooser.APPROVE_OPTION -> {
-                    val selectedFile = fileChooser.selectedFile
-                    if (selectedFile != null && selectedFile.exists()) {
-                        val fileName = "gallery_${UUID.randomUUID()}.${selectedFile.extension}"
-                        val copyResult = copyToAppStorage(selectedFile.absolutePath, fileName)
-                        copyResult.fold(
-                            onSuccess = { path ->
-                                continuation.resume(ImagePickerResult.Success(path))
-                            },
-                            onFailure = { e ->
-                                continuation.resume(ImagePickerResult.Error(e.message ?: "Failed to copy image"))
-                            }
+    actual suspend fun pickImageFromGallery(): ImagePickerResult = suspendCancellableCoroutine { continuation ->
+        // Run file chooser on a separate thread to avoid blocking Compose UI
+        Thread {
+            try {
+                val fileChooser = JFileChooser().apply {
+                    dialogTitle = "Select Image"
+                    fileSelectionMode = JFileChooser.FILES_ONLY
+                    isAcceptAllFileFilterUsed = false
+                    addChoosableFileFilter(
+                        FileNameExtensionFilter(
+                            "Image files",
+                            "jpg", "jpeg", "png", "gif", "bmp"
                         )
-                    } else {
-                        continuation.resume(ImagePickerResult.Error("Selected file does not exist"))
+                    )
+                }
+
+                val result = fileChooser.showOpenDialog(null)
+                when (result) {
+                    JFileChooser.APPROVE_OPTION -> {
+                        val selectedFile = fileChooser.selectedFile
+                        if (selectedFile != null && selectedFile.exists()) {
+                            val fileName = "gallery_${UUID.randomUUID()}.${selectedFile.extension}"
+                            val copyResult = copyToAppStorage(selectedFile.absolutePath, fileName)
+                            copyResult.fold(
+                                onSuccess = { path ->
+                                    continuation.resume(ImagePickerResult.Success(path))
+                                },
+                                onFailure = { e ->
+                                    continuation.resume(ImagePickerResult.Error(e.message ?: "Failed to copy image"))
+                                }
+                            )
+                        } else {
+                            continuation.resume(ImagePickerResult.Error("Selected file does not exist"))
+                        }
+                    }
+                    JFileChooser.CANCEL_OPTION -> {
+                        continuation.resume(ImagePickerResult.Cancelled)
+                    }
+                    else -> {
+                        continuation.resume(ImagePickerResult.Error("File chooser error"))
                     }
                 }
-                JFileChooser.CANCEL_OPTION -> {
-                    continuation.resume(ImagePickerResult.Cancelled)
-                }
-                else -> {
-                    continuation.resume(ImagePickerResult.Error("File chooser error"))
-                }
+            } catch (e: Exception) {
+                continuation.resume(ImagePickerResult.Error(e.message ?: "File chooser failed"))
             }
-        }
+        }.start()
     }
 
     actual suspend fun takePhoto(): ImagePickerResult {

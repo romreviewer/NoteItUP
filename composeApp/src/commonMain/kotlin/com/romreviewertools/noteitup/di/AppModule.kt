@@ -9,6 +9,8 @@ import com.romreviewertools.noteitup.data.cloud.GoogleDriveProvider
 import com.romreviewertools.noteitup.data.database.DiaryDatabase
 import com.romreviewertools.noteitup.data.database.DriverFactory
 import com.romreviewertools.noteitup.data.encryption.EncryptedBundleService
+import com.romreviewertools.noteitup.data.ai.AIService
+import com.romreviewertools.noteitup.data.repository.AISettingsRepository
 import com.romreviewertools.noteitup.data.repository.CloudSyncRepositoryImpl
 import com.romreviewertools.noteitup.data.repository.DiaryRepositoryImpl
 import com.romreviewertools.noteitup.data.repository.PreferencesRepositoryImpl
@@ -34,8 +36,10 @@ import com.romreviewertools.noteitup.domain.usecase.GetAllTagsUseCase
 import com.romreviewertools.noteitup.domain.usecase.GetEntriesUseCase
 import com.romreviewertools.noteitup.domain.usecase.GetEntryByIdUseCase
 import com.romreviewertools.noteitup.domain.usecase.GetStatsUseCase
+import com.romreviewertools.noteitup.domain.usecase.ImproveTextUseCase
 import com.romreviewertools.noteitup.domain.usecase.SearchEntriesUseCase
 import com.romreviewertools.noteitup.domain.usecase.UpdateEntryUseCase
+import com.romreviewertools.noteitup.presentation.screens.aisettings.AISettingsViewModel
 import com.romreviewertools.noteitup.presentation.screens.allentries.AllEntriesViewModel
 import com.romreviewertools.noteitup.presentation.screens.calendar.CalendarViewModel
 import com.romreviewertools.noteitup.presentation.screens.cloudsync.CloudSyncViewModel
@@ -135,6 +139,17 @@ val cloudModule = module {
     }
 }
 
+val aiModule = module {
+    // AI settings repository with secure API key storage
+    singleOf(::AISettingsRepository)
+
+    // AI service for making API calls
+    singleOf(::AIService)
+
+    // AI use cases
+    factoryOf(::ImproveTextUseCase)
+}
+
 val viewModelModule = module {
     viewModelOf(::HomeViewModel)
     viewModelOf(::EditorViewModel)
@@ -148,6 +163,7 @@ val viewModelModule = module {
     viewModelOf(::ExportViewModel)
     viewModelOf(::SecurityViewModel)
     viewModelOf(::CloudSyncViewModel)
+    viewModelOf(::AISettingsViewModel)
 }
 
 val commonModules = listOf(
@@ -155,5 +171,6 @@ val commonModules = listOf(
     repositoryModule,
     useCaseModule,
     cloudModule,
+    aiModule,
     viewModelModule
 )

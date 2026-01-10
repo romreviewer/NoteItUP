@@ -64,6 +64,9 @@ kotlin {
             // Apache Commons Compress for TAR extraction
             implementation("org.apache.commons:commons-compress:1.25.0")
 
+            // Chrome Custom Tabs for better browser experience
+            implementation("androidx.browser:browser:1.8.0")
+
             // Firebase (using BOM via dependencies block below)
         }
         commonMain.dependencies {
@@ -145,8 +148,8 @@ android {
         applicationId = "com.romreviewertools.noteitup"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 7
-        versionName = "1.1.0"
+        versionCode = 8
+        versionName = "1.2.0"
 
         // API Keys from local.properties (gitignored)
         val dropboxAppKey = localProperties.getProperty("DROPBOX_APP_KEY", "")
