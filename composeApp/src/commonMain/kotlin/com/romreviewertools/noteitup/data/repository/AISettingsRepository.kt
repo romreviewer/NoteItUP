@@ -28,7 +28,7 @@ class AISettingsRepository(
         scope.launch {
             combine(
                 preferencesStorage.getString(KEY_AI_ENABLED, "false"),
-                preferencesStorage.getString(KEY_AI_PROVIDER, AIProvider.GEMINI.name),
+                preferencesStorage.getString(KEY_AI_PROVIDER, AIProvider.GROQ.name),
                 preferencesStorage.getString(KEY_API_KEY, ""),
                 preferencesStorage.getString(KEY_SELECTED_MODEL, ""),
                 preferencesStorage.getString(KEY_STREAMING_ENABLED, "true")
@@ -36,7 +36,7 @@ class AISettingsRepository(
                 val provider = try {
                     AIProvider.valueOf(providerName)
                 } catch (e: IllegalArgumentException) {
-                    AIProvider.GEMINI
+                    AIProvider.GROQ
                 }
                 AISettings(
                     enabled = enabled.toBoolean(),
