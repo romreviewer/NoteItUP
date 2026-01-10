@@ -246,12 +246,13 @@ fun AISettingsScreen(
                             ) {
                                 if (uiState.isTestingConnection) {
                                     CircularProgressIndicator(
-                                        modifier = Modifier.width(16.dp),
-                                        strokeWidth = 2.dp
+                                        modifier = Modifier.size(16.dp),
+                                        strokeWidth = 2.dp,
+                                        color = MaterialTheme.colorScheme.onPrimary
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                 }
-                                Text("Test Connection")
+                                Text(if (uiState.isTestingConnection) "Testing..." else "Test Connection")
                             }
 
                             if (uiState.settings.apiKey.isNotBlank()) {
