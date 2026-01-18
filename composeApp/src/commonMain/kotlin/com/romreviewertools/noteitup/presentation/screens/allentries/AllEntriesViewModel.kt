@@ -2,6 +2,8 @@ package com.romreviewertools.noteitup.presentation.screens.allentries
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.romreviewertools.noteitup.data.analytics.AnalyticsEvent
+import com.romreviewertools.noteitup.data.analytics.AnalyticsService
 import com.romreviewertools.noteitup.domain.model.DiaryEntry
 import com.romreviewertools.noteitup.domain.repository.DiaryRepository
 import com.romreviewertools.noteitup.domain.usecase.GetEntriesUseCase
@@ -20,13 +22,15 @@ data class AllEntriesUiState(
 
 class AllEntriesViewModel(
     private val getEntriesUseCase: GetEntriesUseCase,
-    private val repository: DiaryRepository
+    private val repository: DiaryRepository,
+    private val analyticsService: AnalyticsService
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AllEntriesUiState())
     val uiState: StateFlow<AllEntriesUiState> = _uiState.asStateFlow()
 
     init {
+        analyticsService.logEvent(AnalyticsEvent.ScreenViewAllEntries)
         loadAllEntries()
     }
 

@@ -2,6 +2,8 @@ package com.romreviewertools.noteitup.presentation.screens.security
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.romreviewertools.noteitup.data.analytics.AnalyticsEvent
+import com.romreviewertools.noteitup.data.analytics.AnalyticsService
 import com.romreviewertools.noteitup.data.security.BiometricAuthenticator
 import com.romreviewertools.noteitup.data.security.BiometricResult
 import com.romreviewertools.noteitup.data.security.BiometricStatus
@@ -16,13 +18,15 @@ import kotlinx.coroutines.launch
 
 class SecurityViewModel(
     private val securityRepository: SecurityRepository,
-    private val biometricAuthenticator: BiometricAuthenticator
+    private val biometricAuthenticator: BiometricAuthenticator,
+    private val analyticsService: AnalyticsService
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SecurityUiState())
     val uiState: StateFlow<SecurityUiState> = _uiState.asStateFlow()
 
     init {
+        analyticsService.logEvent(AnalyticsEvent.ScreenViewSecurity)
         loadSecuritySettings()
         checkLockStatus()
         checkBiometricAvailability()

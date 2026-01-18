@@ -2,6 +2,8 @@ package com.romreviewertools.noteitup.presentation.screens.export
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.romreviewertools.noteitup.data.analytics.AnalyticsEvent
+import com.romreviewertools.noteitup.data.analytics.AnalyticsService
 import com.romreviewertools.noteitup.data.export.FileExporter
 import com.romreviewertools.noteitup.data.export.FileImporter
 import com.romreviewertools.noteitup.data.export.ZipExporter
@@ -29,11 +31,16 @@ class ExportViewModel(
     private val fileImporter: FileImporter,
     private val zipExporter: ZipExporter,
     private val tarExtractor: TarExtractor,
-    private val imagePicker: ImagePicker
+    private val imagePicker: ImagePicker,
+    private val analyticsService: AnalyticsService
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ExportUiState())
     val uiState: StateFlow<ExportUiState> = _uiState.asStateFlow()
+
+    init {
+        analyticsService.logEvent(AnalyticsEvent.ScreenViewExport)
+    }
 
     fun processIntent(intent: ExportIntent) {
         when (intent) {

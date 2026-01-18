@@ -3,6 +3,8 @@ package com.romreviewertools.noteitup.presentation.screens.aisettings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.romreviewertools.noteitup.data.ai.AIService
+import com.romreviewertools.noteitup.data.analytics.AnalyticsEvent
+import com.romreviewertools.noteitup.data.analytics.AnalyticsService
 import com.romreviewertools.noteitup.data.repository.AISettingsRepository
 import com.romreviewertools.noteitup.domain.model.AIProvider
 import com.romreviewertools.noteitup.util.UrlOpener
@@ -18,13 +20,15 @@ import kotlinx.coroutines.launch
 class AISettingsViewModel(
     private val aiSettingsRepository: AISettingsRepository,
     private val aiService: AIService,
-    private val urlOpener: UrlOpener
+    private val urlOpener: UrlOpener,
+    private val analyticsService: AnalyticsService
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AISettingsUiState())
     val uiState: StateFlow<AISettingsUiState> = _uiState.asStateFlow()
 
     init {
+        analyticsService.logEvent(AnalyticsEvent.ScreenViewAISettings)
         loadSettings()
     }
 

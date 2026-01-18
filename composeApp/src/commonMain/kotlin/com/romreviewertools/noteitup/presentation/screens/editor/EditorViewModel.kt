@@ -2,6 +2,13 @@ package com.romreviewertools.noteitup.presentation.screens.editor
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.benasher44.uuid.uuid4
+import com.romreviewertools.noteitup.data.analytics.AnalyticsEvent
+import com.romreviewertools.noteitup.data.analytics.AnalyticsService
+import com.romreviewertools.noteitup.data.location.LocationPermissionStatus
+import com.romreviewertools.noteitup.data.location.LocationService
+import com.romreviewertools.noteitup.data.media.ImagePicker
+import com.romreviewertools.noteitup.data.review.ReviewStateRepository
 import com.romreviewertools.noteitup.domain.model.DiaryEntry
 import com.romreviewertools.noteitup.domain.model.ImageAttachment
 import com.romreviewertools.noteitup.domain.model.Location
@@ -13,11 +20,6 @@ import com.romreviewertools.noteitup.domain.usecase.GetAllTagsUseCase
 import com.romreviewertools.noteitup.domain.usecase.GetEntryByIdUseCase
 import com.romreviewertools.noteitup.domain.usecase.ImproveTextUseCase
 import com.romreviewertools.noteitup.domain.usecase.UpdateEntryUseCase
-import com.romreviewertools.noteitup.data.media.ImagePicker
-import com.romreviewertools.noteitup.data.media.ImagePickerResult
-import com.romreviewertools.noteitup.data.location.LocationService
-import com.romreviewertools.noteitup.data.location.LocationPermissionStatus
-import com.benasher44.uuid.uuid4
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -35,7 +37,9 @@ class EditorViewModel(
     private val improveTextUseCase: ImproveTextUseCase,
     private val repository: DiaryRepository,
     private val imagePicker: ImagePicker,
-    private val locationService: LocationService
+    private val locationService: LocationService,
+    private val reviewStateRepository: ReviewStateRepository,
+    private val analyticsService: AnalyticsService
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(EditorUiState())
@@ -45,6 +49,7 @@ class EditorViewModel(
     private var originalTagIds: Set<String> = emptySet()
     private var originalFolderId: String? = null
     private var originalImages: List<ImageAttachment> = emptyList()
+    private var originalLocation: Location? = null
 
     init {
         loadAvailableTags()
@@ -113,6 +118,7 @@ class EditorViewModel(
                     originalTagIds = entry.tags.map { it.id }.toSet()
                     originalFolderId = entry.folderId
                     originalImages = entry.images
+                    originalLocation = entry.location
                     _uiState.update {
                         it.copy(
                             isLoading = false,
@@ -148,19 +154,19 @@ class EditorViewModel(
     }
 
     private fun updateTitle(title: String) {
-        _uiState.update { it.copy(title = title) }
+        updateState { it.copy(title = title) }
     }
 
     private fun updateContent(content: String) {
-        _uiState.update { it.copy(content = content) }
+        updateState { it.copy(content = content) }
     }
 
     private fun updateMood(mood: Mood?) {
-        _uiState.update { it.copy(mood = mood) }
+        updateState { it.copy(mood = mood) }
     }
 
     private fun toggleTag(tagId: String) {
-        _uiState.update { state ->
+        updateState { state ->
             val newSelectedTags = if (tagId in state.selectedTagIds) {
                 state.selectedTagIds - tagId
             } else {
@@ -171,11 +177,11 @@ class EditorViewModel(
     }
 
     private fun selectFolder(folderId: String?) {
-        _uiState.update { it.copy(selectedFolderId = folderId) }
+        updateState { it.copy(selectedFolderId = folderId) }
     }
 
     private fun toggleFavorite() {
-        _uiState.update { it.copy(isFavorite = !it.isFavorite) }
+        updateState { it.copy(isFavorite = !it.isFavorite) }
     }
 
     private fun save() {
@@ -227,10 +233,34 @@ class EditorViewModel(
                     // Update image associations
                     updateImageAssociations(savedEntry.id, currentState.images)
 
+                    // Track analytics
+                    val event = if (currentState.isNewEntry) {
+                        AnalyticsEvent.EntryCreated
+                    } else {
+                        AnalyticsEvent.EntrySaved
+                    }
+                    analyticsService.logEvent(event)
+
+                    // Track mood if selected
+                    currentState.mood?.let { mood ->
+                        analyticsService.logEvent(AnalyticsEvent.MoodSelected(mood.name))
+                    }
+
+                    // Increment entry save count and check for review prompt
+                    reviewStateRepository.incrementEntriesSavedCount()
+                    val shouldShowReview = reviewStateRepository.shouldShowReviewPrompt()
+
+                    if (shouldShowReview) {
+                        // Mark prompt as shown to avoid showing again too soon
+                        reviewStateRepository.recordPromptShown()
+                        analyticsService.logEvent(AnalyticsEvent.ReviewPromptShown)
+                    }
+
                     _uiState.update {
                         it.copy(
                             isSaving = false,
-                            isSaved = true
+                            isSaved = true,
+                            shouldShowReviewPrompt = shouldShowReview
                         )
                     }
                 }
@@ -243,6 +273,24 @@ class EditorViewModel(
                     }
                 }
         }
+    }
+
+    /**
+     * Called after review prompt is handled (shown or dismissed)
+     */
+    fun onReviewPromptHandled() {
+        _uiState.update { it.copy(shouldShowReviewPrompt = false) }
+    }
+
+    /**
+     * Called when user completes the review flow
+     */
+    fun onReviewCompleted() {
+        viewModelScope.launch {
+            reviewStateRepository.setHasRated(true)
+            analyticsService.logEvent(AnalyticsEvent.ReviewCompleted)
+        }
+        _uiState.update { it.copy(shouldShowReviewPrompt = false) }
     }
 
     private suspend fun updateTagAssociations(entryId: String, selectedTagIds: Set<String>) {
@@ -307,7 +355,7 @@ class EditorViewModel(
                         createdAt = Clock.System.now()
                     )
 
-                    _uiState.update { state ->
+                    updateState { state ->
                         state.copy(
                             images = state.images + newImage,
                             isAddingImage = false
@@ -326,7 +374,7 @@ class EditorViewModel(
     }
 
     private fun removeImage(imageId: String) {
-        _uiState.update { state ->
+        updateState { state ->
             state.copy(images = state.images.filter { it.id != imageId })
         }
     }
@@ -366,7 +414,7 @@ class EditorViewModel(
                         address = address
                     )
 
-                    _uiState.update {
+                    updateState {
                         it.copy(
                             location = location,
                             isLoadingLocation = false
@@ -385,7 +433,7 @@ class EditorViewModel(
     }
 
     private fun removeLocation() {
-        _uiState.update { it.copy(location = null) }
+        updateState { it.copy(location = null) }
     }
 
     private fun dismissError() {
@@ -435,7 +483,7 @@ class EditorViewModel(
     private fun acceptAISuggestion() {
         val suggestion = _uiState.value.aiSuggestion
         if (suggestion != null) {
-            _uiState.update {
+            updateState {
                 it.copy(
                     content = suggestion,
                     aiSuggestion = null,
@@ -443,5 +491,35 @@ class EditorViewModel(
                 )
             }
         }
+    }
+
+    private fun updateState(update: (EditorUiState) -> EditorUiState) {
+        _uiState.update { currentState ->
+            val newState = update(currentState)
+            val hasChanges = checkForChanges(newState)
+            println("DEBUG: EditorViewModel - updateState. hasChanges: $hasChanges") 
+            newState.copy(hasUnsavedChanges = hasChanges)
+        }
+    }
+
+    private fun checkForChanges(state: EditorUiState): Boolean {
+        if (state.isNewEntry) {
+            return state.title.isNotBlank() ||
+                    state.content.isNotBlank() ||
+                    state.mood != null ||
+                    state.selectedFolderId != null ||
+                    state.selectedTagIds.isNotEmpty() ||
+                    state.images.isNotEmpty() ||
+                    state.location != null
+        }
+
+        return state.title != (originalEntry?.title ?: "") ||
+                state.content != (originalEntry?.content ?: "") ||
+                state.mood != originalEntry?.mood ||
+                state.isFavorite != (originalEntry?.isFavorite ?: false) ||
+                state.selectedFolderId != originalFolderId ||
+                state.selectedTagIds != originalTagIds ||
+                state.location != originalLocation ||
+                state.images != originalImages
     }
 }

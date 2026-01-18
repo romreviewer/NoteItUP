@@ -36,10 +36,12 @@ import com.romreviewertools.noteitup.domain.usecase.GetAllTagsUseCase
 import com.romreviewertools.noteitup.domain.usecase.GetEntriesUseCase
 import com.romreviewertools.noteitup.domain.usecase.GetEntryByIdUseCase
 import com.romreviewertools.noteitup.domain.usecase.GetStatsUseCase
+import com.romreviewertools.noteitup.domain.usecase.ChatUseCase
 import com.romreviewertools.noteitup.domain.usecase.ImproveTextUseCase
 import com.romreviewertools.noteitup.domain.usecase.SearchEntriesUseCase
 import com.romreviewertools.noteitup.domain.usecase.UpdateEntryUseCase
 import com.romreviewertools.noteitup.presentation.screens.aisettings.AISettingsViewModel
+import com.romreviewertools.noteitup.presentation.screens.brainstorm.BrainstormViewModel
 import com.romreviewertools.noteitup.presentation.screens.allentries.AllEntriesViewModel
 import com.romreviewertools.noteitup.presentation.screens.calendar.CalendarViewModel
 import com.romreviewertools.noteitup.presentation.screens.cloudsync.CloudSyncViewModel
@@ -148,6 +150,7 @@ val aiModule = module {
 
     // AI use cases
     factoryOf(::ImproveTextUseCase)
+    factoryOf(::ChatUseCase)
 }
 
 val viewModelModule = module {
@@ -164,6 +167,7 @@ val viewModelModule = module {
     viewModelOf(::SecurityViewModel)
     viewModelOf(::CloudSyncViewModel)
     viewModelOf(::AISettingsViewModel)
+    viewModelOf(::BrainstormViewModel)
 }
 
 val commonModules = listOf(

@@ -34,6 +34,10 @@ import com.romreviewertools.noteitup.presentation.screens.cloudsync.CloudSyncScr
 import com.romreviewertools.noteitup.presentation.screens.cloudsync.CloudSyncViewModel
 import com.romreviewertools.noteitup.presentation.screens.aisettings.AISettingsScreen
 import com.romreviewertools.noteitup.presentation.screens.aisettings.AISettingsViewModel
+import com.romreviewertools.noteitup.presentation.screens.brainstorm.BrainstormScreen
+import com.romreviewertools.noteitup.presentation.screens.brainstorm.BrainstormViewModel
+import com.romreviewertools.noteitup.data.review.InAppReviewManager
+import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -106,6 +110,7 @@ fun AppNavigation(
 
         composable<Routes.NewEntry> {
             val viewModel = koinViewModel<EditorViewModel>()
+            val inAppReviewManager = koinInject<InAppReviewManager>()
             EditorScreen(
                 viewModel = viewModel,
                 entryId = null,
@@ -114,6 +119,12 @@ fun AppNavigation(
                 },
                 onNavigateToAISettings = {
                     navController.navigate(Routes.AISettings)
+                },
+                onNavigateToBrainstorm = {
+                    navController.navigate(Routes.Brainstorm)
+                },
+                onRequestReview = {
+                    inAppReviewManager.requestReview()
                 }
             )
         }
@@ -121,6 +132,7 @@ fun AppNavigation(
         composable<Routes.EditEntry> { backStackEntry ->
             val route: Routes.EditEntry = backStackEntry.toRoute()
             val viewModel = koinViewModel<EditorViewModel>()
+            val inAppReviewManager = koinInject<InAppReviewManager>()
             EditorScreen(
                 viewModel = viewModel,
                 entryId = route.entryId,
@@ -129,6 +141,12 @@ fun AppNavigation(
                 },
                 onNavigateToAISettings = {
                     navController.navigate(Routes.AISettings)
+                },
+                onNavigateToBrainstorm = {
+                    navController.navigate(Routes.Brainstorm)
+                },
+                onRequestReview = {
+                    inAppReviewManager.requestReview()
                 }
             )
         }
@@ -252,6 +270,19 @@ fun AppNavigation(
                 viewModel = viewModel,
                 onNavigateBack = {
                     navController.popBackStack()
+                }
+            )
+        }
+
+        composable<Routes.Brainstorm> {
+            val viewModel = koinViewModel<BrainstormViewModel>()
+            BrainstormScreen(
+                viewModel = viewModel,
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onNavigateToAISettings = {
+                    navController.navigate(Routes.AISettings)
                 }
             )
         }

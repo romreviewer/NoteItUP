@@ -2,6 +2,8 @@ package com.romreviewertools.noteitup.presentation.screens.statistics
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.romreviewertools.noteitup.data.analytics.AnalyticsEvent
+import com.romreviewertools.noteitup.data.analytics.AnalyticsService
 import com.romreviewertools.noteitup.domain.repository.DiaryRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -10,13 +12,15 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class StatisticsViewModel(
-    private val diaryRepository: DiaryRepository
+    private val diaryRepository: DiaryRepository,
+    private val analyticsService: AnalyticsService
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(StatisticsUiState())
     val uiState: StateFlow<StatisticsUiState> = _uiState.asStateFlow()
 
     init {
+        analyticsService.logEvent(AnalyticsEvent.ScreenViewStatistics)
         loadStats()
     }
 

@@ -4,13 +4,17 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -27,6 +31,7 @@ import com.romreviewertools.noteitup.data.ai.ImprovementType
 fun AIToolbar(
     onImprovementSelected: (ImprovementType) -> Unit,
     isLoading: Boolean = false,
+    onBrainstormClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -66,6 +71,30 @@ fun AIToolbar(
                     contentPadding = PaddingValues(horizontal = 0.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
+                    // Brainstorm chip (highlighted)
+                    if (onBrainstormClick != null) {
+                        item {
+                            AssistChip(
+                                onClick = onBrainstormClick,
+                                label = {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.Chat,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("Brainstorm")
+                                    }
+                                },
+                                colors = AssistChipDefaults.assistChipColors(
+                                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                                )
+                            )
+                        }
+                    }
+
+                    // Improvement type chips
                     itemsIndexed(ImprovementType.entries) { _, type ->
                         AssistChip(
                             onClick = { onImprovementSelected(type) },

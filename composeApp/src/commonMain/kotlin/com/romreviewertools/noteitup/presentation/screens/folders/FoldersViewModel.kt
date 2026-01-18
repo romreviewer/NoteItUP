@@ -2,6 +2,8 @@ package com.romreviewertools.noteitup.presentation.screens.folders
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.romreviewertools.noteitup.data.analytics.AnalyticsEvent
+import com.romreviewertools.noteitup.data.analytics.AnalyticsService
 import com.romreviewertools.noteitup.domain.usecase.CreateFolderUseCase
 import com.romreviewertools.noteitup.domain.usecase.DeleteFolderUseCase
 import com.romreviewertools.noteitup.domain.usecase.GetAllFoldersUseCase
@@ -15,13 +17,15 @@ import kotlinx.coroutines.launch
 class FoldersViewModel(
     private val getAllFoldersUseCase: GetAllFoldersUseCase,
     private val createFolderUseCase: CreateFolderUseCase,
-    private val deleteFolderUseCase: DeleteFolderUseCase
+    private val deleteFolderUseCase: DeleteFolderUseCase,
+    private val analyticsService: AnalyticsService
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(FoldersUiState())
     val uiState: StateFlow<FoldersUiState> = _uiState.asStateFlow()
 
     init {
+        analyticsService.logEvent(AnalyticsEvent.ScreenViewFolders)
         loadFolders()
     }
 

@@ -37,6 +37,9 @@ firebase-bom = "33.7.0"
 google-services = "4.4.2"
 firebase-crashlytics-plugin = "3.0.2"
 
+# Play Services
+play-review = "2.0.2"
+
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlin-testJunit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
@@ -99,6 +102,9 @@ play-services-location = { module = "com.google.android.gms:play-services-locati
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebase-bom" }
 firebase-analytics = { module = "com.google.firebase:firebase-analytics-ktx" }
 firebase-crashlytics = { module = "com.google.firebase:firebase-crashlytics-ktx" }
+
+# Play Review
+play-review = { module = "com.google.android.play:review-ktx", version.ref = "play-review" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

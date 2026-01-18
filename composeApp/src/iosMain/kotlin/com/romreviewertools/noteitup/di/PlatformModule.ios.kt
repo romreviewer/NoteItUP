@@ -1,5 +1,6 @@
 package com.romreviewertools.noteitup.di
 
+import com.romreviewertools.noteitup.data.analytics.AnalyticsService
 import com.romreviewertools.noteitup.data.cloud.OAuthHandler
 import com.romreviewertools.noteitup.data.database.DriverFactory
 import com.romreviewertools.noteitup.data.encryption.EncryptionService
@@ -10,6 +11,8 @@ import com.romreviewertools.noteitup.data.import.TarExtractor
 import com.romreviewertools.noteitup.data.location.LocationService
 import com.romreviewertools.noteitup.data.media.ImagePicker
 import com.romreviewertools.noteitup.data.notification.NotificationManager
+import com.romreviewertools.noteitup.data.review.InAppReviewManager
+import com.romreviewertools.noteitup.data.review.ReviewStateRepository
 import com.romreviewertools.noteitup.data.security.BiometricAuthenticator
 import com.romreviewertools.noteitup.data.preferences.PreferencesStorage
 import com.romreviewertools.noteitup.util.UrlOpener
@@ -26,7 +29,7 @@ val iosModule = module {
     single { FileExporter() }
     single { FileImporter() }
     single { ZipExporter() }
-    single { TarExtractor() }  // Note: Stub implementation, Joplin import not yet available on iOS
+    single { TarExtractor() }
     single { NotificationManager() }
     single { BiometricAuthenticator() }
     single { OAuthHandler() }
@@ -34,6 +37,12 @@ val iosModule = module {
     single { ImagePicker() }
     single { LocationService() }
     single { UrlOpener() }
+
+    // Analytics & Review (stub implementations for iOS)
+    single { AnalyticsService() }
+    single { InAppReviewManager() }
+    single { ReviewStateRepository(get()) }
+
     single {
         HttpClient(Darwin) {
             install(ContentNegotiation) {

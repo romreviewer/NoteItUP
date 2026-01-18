@@ -2,6 +2,8 @@ package com.romreviewertools.noteitup.presentation.screens.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.romreviewertools.noteitup.data.analytics.AnalyticsEvent
+import com.romreviewertools.noteitup.data.analytics.AnalyticsService
 import com.romreviewertools.noteitup.domain.repository.DiaryRepository
 import com.romreviewertools.noteitup.domain.usecase.DeleteEntryUseCase
 import com.romreviewertools.noteitup.domain.usecase.GetEntriesUseCase
@@ -18,13 +20,15 @@ class HomeViewModel(
     private val getEntriesUseCase: GetEntriesUseCase,
     private val getStatsUseCase: GetStatsUseCase,
     private val deleteEntryUseCase: DeleteEntryUseCase,
-    private val repository: DiaryRepository
+    private val repository: DiaryRepository,
+    private val analyticsService: AnalyticsService
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     init {
+        analyticsService.logEvent(AnalyticsEvent.ScreenViewHome)
         processIntent(HomeIntent.LoadEntries)
     }
 
@@ -73,6 +77,9 @@ class HomeViewModel(
     private fun deleteEntry(entryId: String) {
         viewModelScope.launch {
             deleteEntryUseCase(entryId)
+                .onSuccess {
+                    analyticsService.logEvent(AnalyticsEvent.EntryDeleted)
+                }
                 .onFailure { e ->
                     _uiState.update { it.copy(error = e.message) }
                 }

@@ -28,4 +28,11 @@ object PreferencesKeys {
     const val CLOUD_LAST_SYNC_TIME = "cloud_last_sync_time"
     const val CLOUD_LAST_LOCAL_MODIFICATION = "cloud_last_local_modification"
     const val CLOUD_SYNC_PASSWORD_HASH = "cloud_sync_password_hash"
+
+    // In-app review settings
+    const val REVIEW_ENTRIES_SAVED_COUNT = "review_entries_saved_count"
+    const val REVIEW_HAS_RATED = "review_has_rated"
+    const val REVIEW_LAST_PROMPT_TIME = "review_last_prompt_time"
+    const val REVIEW_DISMISS_COUNT = "review_dismiss_count"
+    const val REVIEW_NEVER_ASK_AGAIN = "review_never_ask_again"
 }

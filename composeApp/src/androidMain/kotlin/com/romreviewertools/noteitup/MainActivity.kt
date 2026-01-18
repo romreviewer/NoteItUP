@@ -8,17 +8,24 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.fragment.app.FragmentActivity
 import com.romreviewertools.noteitup.data.cloud.CloudProviderType
+import com.romreviewertools.noteitup.data.review.InAppReviewManager
 import com.romreviewertools.noteitup.data.security.ActivityHolder
 import com.romreviewertools.noteitup.presentation.screens.cloudsync.OAuthCallback
 import com.romreviewertools.noteitup.presentation.screens.cloudsync.OAuthCallbackEmitter
+import org.koin.android.ext.android.inject
 
 class MainActivity : FragmentActivity() {
+    private val inAppReviewManager: InAppReviewManager by inject()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
         // Register activity for biometric authentication
         ActivityHolder.setActivity(this)
+
+        // Register activity for in-app review
+        inAppReviewManager.setActivity(this)
 
         // Handle OAuth callback from initial launch
         handleOAuthIntent(intent)
@@ -31,11 +38,13 @@ class MainActivity : FragmentActivity() {
     override fun onResume() {
         super.onResume()
         ActivityHolder.setActivity(this)
+        inAppReviewManager.setActivity(this)
     }
 
     override fun onDestroy() {
         super.onDestroy()
         ActivityHolder.clearActivity()
+        inAppReviewManager.clearActivity()
     }
 
     override fun onNewIntent(intent: Intent) {

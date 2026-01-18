@@ -2,6 +2,8 @@ package com.romreviewertools.noteitup.presentation.screens.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.romreviewertools.noteitup.data.analytics.AnalyticsEvent
+import com.romreviewertools.noteitup.data.analytics.AnalyticsService
 import com.romreviewertools.noteitup.data.notification.NotificationManager
 import com.romreviewertools.noteitup.domain.repository.PreferencesRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,13 +15,15 @@ import kotlinx.datetime.LocalTime
 
 class SettingsViewModel(
     private val preferencesRepository: PreferencesRepository,
-    private val notificationManager: NotificationManager
+    private val notificationManager: NotificationManager,
+    private val analyticsService: AnalyticsService
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
 
     init {
+        analyticsService.logEvent(AnalyticsEvent.ScreenViewSettings)
         loadPreferences()
         loadReminderSettings()
     }

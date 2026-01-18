@@ -2,6 +2,8 @@ package com.romreviewertools.noteitup.presentation.screens.calendar
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.romreviewertools.noteitup.data.analytics.AnalyticsEvent
+import com.romreviewertools.noteitup.data.analytics.AnalyticsService
 import com.romreviewertools.noteitup.domain.repository.DiaryRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,13 +19,15 @@ import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Clock
 
 class CalendarViewModel(
-    private val repository: DiaryRepository
+    private val repository: DiaryRepository,
+    private val analyticsService: AnalyticsService
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(createInitialState())
     val uiState: StateFlow<CalendarUiState> = _uiState.asStateFlow()
 
     init {
+        analyticsService.logEvent(AnalyticsEvent.ScreenViewCalendar)
         loadEntriesForMonth()
     }
 

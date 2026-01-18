@@ -2,6 +2,8 @@ package com.romreviewertools.noteitup.presentation.screens.tags
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.romreviewertools.noteitup.data.analytics.AnalyticsEvent
+import com.romreviewertools.noteitup.data.analytics.AnalyticsService
 import com.romreviewertools.noteitup.domain.usecase.CreateTagUseCase
 import com.romreviewertools.noteitup.domain.usecase.DeleteTagUseCase
 import com.romreviewertools.noteitup.domain.usecase.GetAllTagsUseCase
@@ -15,13 +17,15 @@ import kotlinx.coroutines.launch
 class TagsViewModel(
     private val getAllTagsUseCase: GetAllTagsUseCase,
     private val createTagUseCase: CreateTagUseCase,
-    private val deleteTagUseCase: DeleteTagUseCase
+    private val deleteTagUseCase: DeleteTagUseCase,
+    private val analyticsService: AnalyticsService
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(TagsUiState())
     val uiState: StateFlow<TagsUiState> = _uiState.asStateFlow()
 
     init {
+        analyticsService.logEvent(AnalyticsEvent.ScreenViewTags)
         loadTags()
     }
 

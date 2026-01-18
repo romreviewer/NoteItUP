@@ -44,4 +44,7 @@ sealed interface Routes {
 
     @Serializable
     data object AISettings : Routes
+
+    @Serializable
+    data object Brainstorm : Routes
 }

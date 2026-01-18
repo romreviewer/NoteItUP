@@ -67,6 +67,9 @@ kotlin {
             // Chrome Custom Tabs for better browser experience
             implementation("androidx.browser:browser:1.8.0")
 
+            // Play In-App Review
+            implementation(libs.play.review)
+
             // Firebase (using BOM via dependencies block below)
         }
         commonMain.dependencies {
@@ -148,8 +151,8 @@ android {
         applicationId = "com.romreviewertools.noteitup"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 8
-        versionName = "1.2.0"
+        versionCode = 9
+        versionName = "1.3.0"
 
         // API Keys from local.properties (gitignored)
         val dropboxAppKey = localProperties.getProperty("DROPBOX_APP_KEY", "")

@@ -31,5 +31,8 @@ data class EditorUiState(
     // AI
     val isImprovingText: Boolean = false,
     val aiSuggestion: String? = null,
-    val aiError: String? = null
+    val aiError: String? = null,
+    val hasUnsavedChanges: Boolean = false,
+    // In-app review
+    val shouldShowReviewPrompt: Boolean = false
 )

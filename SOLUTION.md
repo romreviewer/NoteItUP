@@ -620,10 +620,10 @@ backup_TIMESTAMP.noteitup
 - [x] ViewModel integration with proper state management
 
 **Pending:**
-- [ ] iOS TarExtractor implementation (Joplin import on iOS)
-  - Challenge: No built-in TAR support in iOS Foundation framework
-  - Options: CocoaPods library (e.g., "LightUntar"), Swift Compression framework, or custom TAR parser
-  - Day One import works on iOS (uses ZipExporter which is already implemented)
+- [x] iOS TarExtractor implementation (Joplin import on iOS)
+  - Implemented using pure Kotlin TAR parser (no external dependencies)
+  - Supports POSIX ustar format with prefix field for long paths
+  - Day One import also works on iOS (uses ZipExporter)
 - [ ] Testing with real Day One export files
 - [ ] Testing with real Joplin JEX export files
 - [ ] Integration testing across all platforms
@@ -823,8 +823,8 @@ RichTextEditor(
 - [x] Dependency injection setup
 
 **Pending:**
-- [ ] Brainstorming chat interface
-- [ ] Conversation history storage
+- [x] Brainstorming chat interface (implemented with starter prompts)
+- [ ] Conversation history storage (persistent across sessions)
 - [ ] Token counting and cost estimation
 - [ ] Diff view for suggestions
 - [ ] Context awareness (reference previous entries)
@@ -1105,7 +1105,69 @@ Users can choose from multiple popular AI APIs (bring your own API key):
 
 ---
 
-### Phase 9 - Additional Advanced Features
+### Phase 9 - User Engagement & Analytics ✅ COMPLETED
+
+**In-App Rating & Firebase Analytics for user engagement and app insights.**
+
+**Implemented:**
+
+1. **Android In-App Rating** ✅ COMPLETED
+   - **Trigger:** After user saves a diary entry (not on every save)
+   - **Logic:**
+     - Show rating prompt after user has saved 5 entries
+     - Don't show if user already rated or dismissed permanently
+     - Uses Google Play In-App Review API
+     - Minimum 7 days between prompts, max 3 dismissals
+   - **Implementation:**
+     - Platform-specific (Android with `InAppReviewManager`, stub for iOS/JVM)
+     - Uses `com.google.android.play:review-ktx:2.0.2` library
+     - `ReviewStateRepository` for tracking state in preferences
+     - Integrated into `EditorViewModel.save()` method
+
+2. **Firebase Analytics Events** ✅ COMPLETED
+   - **Purpose:** Track user behavior to improve app experience
+   - **Events Implemented:**
+     - `entry_created` - When user creates a new entry
+     - `entry_saved` - When user saves an entry (new or edit)
+     - `entry_deleted` - When user deletes an entry
+     - `mood_selected` - Which mood users select (mood type as parameter)
+     - `ai_feature_used` - AI improvement type used (type as parameter)
+     - `brainstorm_session_started` - User started a brainstorm chat
+     - `export_completed` - Export format and count
+     - `import_completed` - Import source (Day One/Joplin) and count
+     - `cloud_sync_completed` - Sync provider and status
+     - `theme_changed` - Theme preference changes
+     - `folder_created` / `tag_created` - Organization features used
+     - `review_prompt_shown` / `review_completed` - Review flow tracking
+   - **Implementation:**
+     - `AnalyticsService` with expect/actual pattern
+     - Android: Firebase Analytics with Bundle params
+     - iOS/JVM: Stub implementations (no-op)
+     - Events tracked in EditorViewModel for entry operations
+   - **Privacy:**
+     - No PII (personally identifiable information)
+     - No diary content sent to analytics
+     - Only aggregate usage patterns
+
+**Components to Create:**
+
+| Component | Description |
+|-----------|-------------|
+| `InAppReviewManager` | Android-specific in-app review prompt (expect/actual) |
+| `AnalyticsService` | Platform-specific analytics tracking (expect/actual) |
+| `AnalyticsEvent` | Sealed class defining all trackable events |
+| `ReviewState` | Data class for tracking rating prompt state |
+
+**Dependencies to Add:**
+
+| Platform | Library | Purpose |
+|----------|---------|---------|
+| Android | `com.google.android.play:review-ktx:2.0.1` | In-App Review API |
+| Android | `com.google.firebase:firebase-analytics-ktx` | Firebase Analytics |
+| iOS | Firebase iOS SDK | Firebase Analytics |
+| JVM | (none) | Stub implementations |
+
+### Phase 10 - Additional Advanced Features (Future)
 - [ ] Image attachments (native capture/gallery)
 - [ ] Widgets (Android home screen)
 - [ ] Local encryption (AES-256) for data at rest
@@ -1365,10 +1427,10 @@ Desktop version is **fully functional** for journaling with the following notes:
 ### Phase 7 Remaining Tasks
 
 **High Priority:**
-1. **iOS TarExtractor Implementation**
-   - Required for Joplin import on iOS devices
-   - Day One import already works on all platforms
-   - Estimated effort: Medium (need to research iOS TAR extraction libraries)
+1. ~~**iOS TarExtractor Implementation**~~ ✅ **COMPLETED**
+   - Implemented using pure Kotlin TAR parser (no external dependencies)
+   - Supports POSIX ustar format with prefix field for long paths
+   - Joplin import now works on all platforms including iOS
 
 **Medium Priority:**
 2. **Real-world Testing**

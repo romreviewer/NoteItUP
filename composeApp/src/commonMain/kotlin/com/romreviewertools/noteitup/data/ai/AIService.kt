@@ -110,6 +110,53 @@ class AIService(
     }
 
     /**
+     * Multi-turn chat conversation with AI
+     */
+    suspend fun chat(
+        systemPrompt: String,
+        messages: List<ChatMessage>
+    ): Result<String> {
+        return try {
+            val settings = aiSettingsRepository.aiSettings.firstOrNull()
+                ?: return Result.failure(Exception("AI settings not configured"))
+
+            if (!settings.enabled) {
+                return Result.failure(Exception("AI features are disabled"))
+            }
+
+            if (settings.apiKey.isBlank()) {
+                return Result.failure(Exception("API key not configured"))
+            }
+
+            val allMessages = listOf(
+                ChatMessage(role = "system", content = systemPrompt)
+            ) + messages
+
+            val request = ChatCompletionRequest(
+                model = settings.selectedModel.ifBlank {
+                    getDefaultModel(settings.selectedProvider)
+                },
+                messages = allMessages,
+                temperature = 0.8,
+                stream = false
+            )
+
+            val response = makeRequest(
+                provider = settings.selectedProvider,
+                apiKey = settings.apiKey,
+                request = request
+            )
+
+            val responseText = response.choices.firstOrNull()?.message?.content
+                ?: return Result.failure(Exception("No response from AI"))
+
+            Result.success(responseText.trim())
+        } catch (e: Exception) {
+            Result.failure(Exception("Failed to get response: ${e.message}"))
+        }
+    }
+
+    /**
      * Make HTTP request to AI provider
      */
     private suspend fun makeRequest(

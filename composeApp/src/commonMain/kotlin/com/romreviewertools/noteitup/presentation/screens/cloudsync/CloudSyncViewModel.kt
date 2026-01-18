@@ -2,6 +2,8 @@ package com.romreviewertools.noteitup.presentation.screens.cloudsync
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.romreviewertools.noteitup.data.analytics.AnalyticsEvent
+import com.romreviewertools.noteitup.data.analytics.AnalyticsService
 import com.romreviewertools.noteitup.data.cloud.CloudProviderType
 import com.romreviewertools.noteitup.data.cloud.CloudResult
 import com.romreviewertools.noteitup.data.cloud.CloudSyncManager
@@ -17,13 +19,15 @@ import kotlinx.coroutines.launch
 class CloudSyncViewModel(
     private val cloudSyncManager: CloudSyncManager,
     private val cloudSyncRepository: CloudSyncRepository,
-    private val oAuthHandler: OAuthHandler
+    private val oAuthHandler: OAuthHandler,
+    private val analyticsService: AnalyticsService
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CloudSyncUiState())
     val uiState: StateFlow<CloudSyncUiState> = _uiState.asStateFlow()
 
     init {
+        analyticsService.logEvent(AnalyticsEvent.ScreenViewCloudSync)
         observeAuthStatus()
         observeSyncSettings()
         observeSyncStatus()

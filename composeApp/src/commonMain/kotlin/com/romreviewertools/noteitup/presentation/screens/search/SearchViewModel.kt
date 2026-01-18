@@ -2,6 +2,8 @@ package com.romreviewertools.noteitup.presentation.screens.search
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.romreviewertools.noteitup.data.analytics.AnalyticsEvent
+import com.romreviewertools.noteitup.data.analytics.AnalyticsService
 import com.romreviewertools.noteitup.domain.repository.DiaryRepository
 import com.romreviewertools.noteitup.domain.usecase.SearchEntriesUseCase
 import kotlinx.coroutines.FlowPreview
@@ -21,7 +23,8 @@ import kotlinx.coroutines.launch
 @OptIn(FlowPreview::class, kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class SearchViewModel(
     private val searchEntriesUseCase: SearchEntriesUseCase,
-    private val repository: DiaryRepository
+    private val repository: DiaryRepository,
+    private val analyticsService: AnalyticsService
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SearchUiState())
@@ -30,6 +33,7 @@ class SearchViewModel(
     private val queryFlow = MutableStateFlow("")
 
     init {
+        analyticsService.logEvent(AnalyticsEvent.ScreenViewSearch)
         observeSearchQuery()
     }
 
