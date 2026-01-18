@@ -2,17 +2,40 @@
   <img src="composeApp/src/androidMain/ic_launcher-playstore.png" width="120" alt="NoteItUP App Icon"/>
 </p>
 
-# NoteItUP - AI-Powered Personal Diary
+<h1 align="center">NoteItUP</h1>
 
-✨ **Your Personal Journal with AI Writing Assistant**
+<p align="center">
+  <strong>AI-Powered Personal Diary & Journal</strong><br>
+  Privacy-first journaling with intelligent writing assistance
+</p>
 
-A modern, intelligent diary application that helps you write better with **AI-powered text improvement**. Built with **Kotlin Multiplatform** and **Compose Multiplatform**, targeting Android, iOS, and Desktop (JVM).
+<p align="center">
+  <a href="https://play.google.com/store/apps/details?id=com.romreviewertools.noteitup">
+    <img src="https://img.shields.io/badge/Google%20Play-Download-green?style=for-the-badge&logo=google-play" alt="Get it on Google Play"/>
+  </a>
+  <a href="https://github.com/romreviewer/NoteItUP">
+    <img src="https://img.shields.io/badge/GitHub-Open%20Source-black?style=for-the-badge&logo=github" alt="View on GitHub"/>
+  </a>
+</p>
 
-**🤖 AI Features:**
-- 8 AI improvement types for your writing
-- Support for 6+ AI providers (OpenAI, Claude, Gemini, Groq, and more)
-- Free AI options available (Groq & Gemini)
-- Privacy-first: Your API keys stay on your device
+<p align="center">
+  <img src="https://img.shields.io/badge/Kotlin-Multiplatform-7F52FF?logo=kotlin&logoColor=white" alt="Kotlin Multiplatform"/>
+  <img src="https://img.shields.io/badge/Compose-Multiplatform-4285F4?logo=jetpack-compose&logoColor=white" alt="Compose Multiplatform"/>
+  <img src="https://img.shields.io/badge/License-MIT-blue" alt="MIT License"/>
+  <img src="https://img.shields.io/badge/Platform-Android%20%7C%20iOS%20%7C%20Desktop-orange" alt="Platforms"/>
+</p>
+
+---
+
+## Overview
+
+NoteItUP is a modern, open-source journaling application that combines the simplicity of traditional diary writing with the power of AI assistance. Built with **Kotlin Multiplatform** and **Compose Multiplatform**, it runs natively on Android, iOS, and Desktop while keeping your data secure and private.
+
+**Key Highlights:**
+- 🤖 **AI-Powered** - 8 writing improvement types + Brainstorm chat mode
+- 🔐 **Privacy-First** - All data stored locally, encrypted backups
+- 📱 **Cross-Platform** - One codebase for Android, iOS & Desktop
+- 🌟 **100% Open Source** - Transparent, community-driven development
 
 ## Screenshots
 
@@ -25,258 +48,315 @@ A modern, intelligent diary application that helps you write better with **AI-po
 
 ## Features
 
-### 🤖 AI-Powered Writing Assistant
+### 🤖 AI Writing Assistant
 
 Transform your journaling with intelligent AI assistance:
 
-- **8 Improvement Types** - Enhance your writing with one tap:
-  - 📝 **Improve for Journal** - Optimize entries for personal reflection
-  - ✅ **Fix Grammar** - Correct spelling and grammar errors
-  - 💡 **Improve Clarity** - Make your thoughts clearer and more organized
-  - ✂️ **Make Shorter** - Condense while keeping key points
-  - 📖 **Expand** - Add depth and detail to your entries
-  - 👔 **Professional Tone** - Convert to formal writing style
-  - 😊 **Casual Tone** - Make it conversational and relaxed
-  - 📋 **Summarize** - Create concise summaries of long entries
+#### Text Improvement (8 Types)
+| Type | Description |
+|------|-------------|
+| 📝 **Improve for Journal** | Optimize entries for personal reflection |
+| ✅ **Fix Grammar** | Correct spelling and grammar errors |
+| 💡 **Improve Clarity** | Make thoughts clearer and organized |
+| ✂️ **Make Shorter** | Condense while keeping key points |
+| 📖 **Expand** | Add depth and detail to entries |
+| 👔 **Professional Tone** | Convert to formal writing style |
+| 😊 **Casual Tone** | Make it conversational and relaxed |
+| 📋 **Summarize** | Create concise summaries |
 
-- **Multiple AI Providers** - Choose what works best for you:
-  - OpenAI (GPT-4o, GPT-4o-mini, GPT-3.5-turbo)
-  - Anthropic Claude (3.5 Sonnet, Haiku)
-  - Google Gemini (2.0 Flash) - **FREE tier available**
-  - Groq (Llama 3.x) - **FREE & FAST - Recommended!**
-  - OpenRouter (100+ models, some free)
-  - Together AI ($25 free credit for new users)
+#### 💬 Brainstorm Mode (NEW)
+- Interactive AI chat for creative writing
+- Get writing prompts and ideas
+- Overcome writer's block
+- Conversational interface with message history
 
-- **Privacy & Security First**:
-  - 🔐 **Your keys, your control** - API keys stored securely on your device
-  - 🛡️ **Platform-specific encryption** - Protected using system keychains
-  - 🚫 **No tracking** - Your journal content never leaves your device (except to your chosen AI provider)
-  - ✅ **Easy testing** - Test connection before using any provider
+#### Multiple AI Providers
+| Provider | Free Tier | Models |
+|----------|-----------|--------|
+| **Groq** ⭐ | ✅ Free & Fast | Llama 3.x |
+| **Google Gemini** | ✅ 1,500 req/day | Gemini 2.0 Flash |
+| **OpenRouter** | ✅ Some models | 100+ models |
+| **Together AI** | $25 credit | Various |
+| **OpenAI** | ❌ Paid | GPT-4o, GPT-4o-mini |
+| **Anthropic** | ❌ Paid | Claude 3.5 Sonnet |
 
-- **Smart Integration**:
-  - One-tap improvements directly in the editor
-  - Select text to improve specific sections
-  - AI toolbar for quick access to all improvement types
-  - Real-time suggestions
+> **Privacy Note:** Your API keys are stored securely on your device using platform-specific encryption. Journal content is only sent to your chosen AI provider when you explicitly request improvements.
 
-### Core Journaling Features
+---
 
-- **Rich Text Editor** - Write diary entries with Markdown support
-  - Bold, Italic, Headers (H1, H2)
-  - Bullet lists, Numbered lists
-  - Blockquotes, Code blocks, Links
-  - Live preview mode
+### ✍️ Rich Text Editor
 
-- **Mood Tracking** - Track your emotional state with mood indicators
-  - Amazing, Good, Neutral, Sad, Terrible moods
-  - Visual mood emojis on entries
+Full **WYSIWYG editor** with formatting toolbar:
 
-- **Organization**
-  - **Folders** - Organize entries into custom folders with colors
-  - **Tags** - Add multiple tags to entries for easy filtering
-  - **Favorites** - Mark important entries as favorites
+- **Text Formatting**: Bold, Italic, Underline, Strikethrough
+- **Headings**: H1, H2, H3 levels
+- **Lists**: Bullet lists, Numbered lists
+- **Blocks**: Blockquotes, Code blocks
+- **Links**: Inline hyperlinks
+- **Live Preview**: Toggle between edit and preview modes
 
-### More Advanced Features
+---
 
-- **Image Attachments** - Attach photos to diary entries
-  - Pick from gallery or capture with camera
-  - Automatic image compression (max 1920px, JPEG 85%)
-  - Thumbnail previews
+### 😊 Mood Tracking
 
-- **Location Tagging** - Add GPS coordinates to entries
-  - Automatic reverse geocoding for address display
-  - Location permission handling
+Track your emotional journey:
 
-- **Calendar View** - Browse entries by date
-  - Visual indicators for days with entries
-  - Quick navigation to specific dates
+- **5 Mood Levels**: Amazing, Good, Neutral, Sad, Terrible
+- **Visual Indicators**: Emoji icons on entries
+- **Statistics**: Mood distribution charts
+- **Trends**: Track mood patterns over time
 
+---
+
+### 📁 Organization
+
+Keep your journal organized:
+
+- **Folders** - Custom folders with color coding
+- **Tags** - Multiple tags per entry for flexible categorization
+- **Favorites** - Star important entries for quick access
+- **Calendar View** - Browse entries by date with visual indicators
 - **Search** - Full-text search across all entries
 
-- **Statistics Dashboard**
-  - Total entries count
-  - Writing streak tracking
-  - Mood distribution
-  - Tags and favorites count
+---
 
-### Security
-- **PIN Protection** - Lock app with 4-digit PIN
-- **Biometric Authentication** - Fingerprint/Face unlock support
+### 📸 Media & Location
 
-### Data Management
-- **Export/Import** - Backup and restore entries (JSON format)
-- **Cloud Sync** - Backup to cloud providers
-  - Dropbox integration (available)
-  - Google Drive (coming soon)
-  - Auto-sync with configurable intervals
+Enrich your entries:
 
-## Tech Stack
+- **Image Attachments**
+  - Pick from gallery or capture with camera
+  - Automatic compression (max 1920px, JPEG 85%)
+  - Thumbnail previews in entries
 
-- **Kotlin Multiplatform** - Shared business logic across platforms
-- **Compose Multiplatform** - Shared UI across Android, iOS, Desktop
-- **SQLDelight** - Type-safe SQL with multiplatform support
-- **Koin** - Dependency injection
-- **Kotlin Coroutines & Flow** - Asynchronous programming
-- **Ktor Client** - Cross-platform HTTP client for AI APIs and cloud sync
-- **kotlinx.serialization** - JSON parsing for API requests/responses
-- **Material Design 3** - Modern UI components
-- **Richeditor-compose** - WYSIWYG markdown editor
+- **Location Tagging**
+  - GPS coordinates with your entries
+  - Automatic address lookup (reverse geocoding)
+  - Map integration
 
-## Project Structure
+---
 
-```
-composeApp/src/
-├── commonMain/          # Shared code for all platforms
-│   ├── kotlin/
-│   │   ├── data/        # Repository implementations, database
-│   │   ├── domain/      # Models, use cases, repository interfaces
-│   │   └── presentation/# Screens, ViewModels, UI components
-│   └── sqldelight/      # Database schema and queries
-├── androidMain/         # Android-specific implementations
-├── iosMain/             # iOS-specific implementations
-└── jvmMain/             # Desktop-specific implementations
-```
+### 🔐 Security
+
+Your privacy matters:
+
+| Feature | Description |
+|---------|-------------|
+| **PIN Lock** | 4-6 digit PIN protection |
+| **Biometric** | Fingerprint / Face ID unlock |
+| **Auto-Lock** | Configurable timeout (immediate to 30 min) |
+| **Encrypted Backups** | Password-protected cloud backups |
+| **Local Storage** | All data stays on your device |
+
+---
+
+### ☁️ Cloud Sync
+
+Secure backup to cloud providers:
+
+- **Google Drive** - Full backup/restore support
+- **Dropbox** - Full backup/restore support
+- **End-to-End Encryption** - Backups encrypted with your password
+- **Auto-Sync** - Configurable intervals (hourly, daily, weekly)
+- **Wi-Fi Only** - Option to sync only on Wi-Fi
+
+---
+
+### 📤 Import & Export
+
+Migrate from other apps or backup locally:
+
+**Export Formats:**
+- JSON (full backup with metadata)
+- CSV (spreadsheet compatible)
+- Markdown (plain text)
+- PDF (formatted document)
+
+**Import From:**
+- NoteItUP backup (JSON)
+- **Day One** - Full journal import with photos
+- **Joplin** - Notes import (.jex files)
+
+---
+
+### 📊 Statistics Dashboard
+
+Insights into your journaling:
+
+- Total entries count
+- Writing streak tracking
+- Mood distribution pie chart
+- Most used tags
+- Entries per month/year
+- Favorites count
+
+---
+
+### 🎨 Customization
+
+Make it yours:
+
+- **Themes**: Light, Dark, System default
+- **Accent Colors**: Multiple color options
+- **Font Sizes**: Small, Medium, Large, Extra Large
+- **Daily Reminders**: Configurable notification time
+
+---
 
 ## Platform Support
 
-NoteItUP is built with **Kotlin Multiplatform** and runs on Android, iOS, and Desktop (Windows/Mac/Linux).
+| Feature | Android | iOS | Desktop |
+|---------|:-------:|:---:|:-------:|
+| Rich Text Editor | ✅ | ✅ | ✅ |
+| AI Writing Assistant | ✅ | ✅ | ✅ |
+| Brainstorm Chat | ✅ | ✅ | ✅ |
+| Cloud Sync | ✅ | ✅ | ✅ |
+| Import/Export | ✅ | ✅ | ✅ |
+| Image Attachments | ✅ | ✅ | ✅ |
+| Biometric Unlock | ✅ | ✅ | ❌ |
+| Camera Capture | ✅ | ✅ | ❌ |
+| GPS Location | ✅ | ✅ | ❌ |
+| Daily Reminders | ✅ | ✅ | ❌ |
+| In-App Review | ✅ | ❌ | ❌ |
+| Multi-Window | ❌ | ❌ | ✅ |
 
-### ✅ Available on All Platforms
+---
 
-All core features work across all platforms:
-- ✅ Complete diary editing (entries, folders, tags, moods)
-- ✅ WYSIWYG rich text editor with Markdown
-- ✅ Search, calendar, and statistics
-- ✅ Import/Export (JSON, CSV, Markdown, Day One, Joplin)
-- ✅ Image attachments with thumbnails
-- ✅ AI Writing Assistant (8 improvement types, 6 providers)
-- ✅ Cloud sync (Dropbox, Google Drive) with encryption
-- ✅ PIN security with auto-lock
-- ✅ Light/Dark themes with accent colors
+## Tech Stack
 
-### Platform-Specific Features
+| Technology | Purpose |
+|------------|---------|
+| **Kotlin Multiplatform** | Shared business logic |
+| **Compose Multiplatform** | Shared UI across platforms |
+| **SQLDelight** | Type-safe SQL database |
+| **Koin** | Dependency injection |
+| **Ktor Client** | HTTP client for APIs |
+| **kotlinx.serialization** | JSON parsing |
+| **Material Design 3** | Modern UI components |
+| **Richeditor-compose** | WYSIWYG editor |
+| **Firebase Analytics** | Usage analytics (Android) |
+| **Play In-App Review** | Rating prompts (Android) |
 
-| Feature | Android | Desktop (JVM) | iOS |
-|---------|---------|---------------|-----|
-| Multi-Window Support | ❌ | ✅ Full support with menu bar | ❌ |
-| Camera Photo Capture | ✅ | ❌ (use file picker) | ✅ |
-| Biometric Unlock | ✅ Fingerprint/Face | ❌ (PIN only) | ✅ Face ID/Touch ID |
-| GPS Location Tagging | ✅ | ❌ | ✅ |
-| Daily Reminders | ✅ | ❌ (planned) | ✅ |
-| Chrome Custom Tabs | ✅ | Standard browser | Safari |
+---
 
-**Desktop users:** All core journaling features work perfectly on Desktop. The Desktop version includes unique features like multi-window support and menu bar integration. The missing features are hardware-dependent (camera, GPS, biometrics) and don't affect the journaling experience.
+## Getting Started
 
-## Building the Project
+### Download
 
-### Prerequisites
+<a href="https://play.google.com/store/apps/details?id=com.romreviewertools.noteitup">
+  <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" height="80" alt="Get it on Google Play"/>
+</a>
+
+### Build from Source
+
+**Prerequisites:**
 - Android Studio Hedgehog or later
 - JDK 17+
 - Xcode 15+ (for iOS)
 
-### Android
-```shell
-# Debug build
+```bash
+# Clone the repository
+git clone https://github.com/romreviewer/NoteItUP.git
+cd NoteItUP
+
+# Android
 ./gradlew :composeApp:assembleDebug
-
-# Install on connected device
 ./gradlew :composeApp:installDebug
-```
 
-### Desktop (JVM)
-```shell
+# Desktop
 ./gradlew :composeApp:run
+
+# iOS - Open in Xcode
+open iosApp/iosApp.xcodeproj
 ```
-
-### iOS
-Open `/iosApp` in Xcode and run, or use:
-```shell
-./gradlew :composeApp:iosSimulatorArm64Main
-```
-
-## Architecture
-
-The app follows **Clean Architecture** with **MVI (Model-View-Intent)** pattern:
-
-- **Domain Layer** - Business logic, models, use cases
-- **Data Layer** - Repository implementations, local database, platform services
-- **Presentation Layer** - Compose UI, ViewModels, UI state management
-
-### Key Patterns
-- `expect/actual` for platform-specific implementations
-- Unidirectional data flow with StateFlow
-- Repository pattern for data access
-
-## AI Assistant Setup
-
-The app supports AI-powered text improvement using your own API key (BYOK - Bring Your Own Key). This gives you full control over your AI usage and costs.
-
-### Recommended: Groq (Free & Fast)
-1. Visit [Groq Console](https://console.groq.com/keys)
-2. Sign up for a free account
-3. Create an API key
-4. In NoteItUP: Settings → AI Settings → Select "Groq" → Paste API key
-5. Tap "Test Connection" to verify
-
-### Alternative Providers
-
-**Google Gemini (Free Tier)**
-- Get key: https://aistudio.google.com/apikey
-- Free tier: 15 requests/minute, 1,500 requests/day
-- Model: gemini-2.0-flash
-
-**OpenAI (Paid)**
-- Get key: https://platform.openai.com/api-keys
-- Pricing: $0.15-$5 per million tokens
-- Models: GPT-4o, GPT-4o-mini, GPT-3.5-turbo
-
-**Anthropic Claude (Paid)**
-- Get key: https://console.anthropic.com/settings/keys
-- Pricing: $3-$15 per million tokens
-- Models: Claude 3.5 Sonnet, Haiku
-
-**OpenRouter (Some Free Models)**
-- Get key: https://openrouter.ai/keys
-- Access to 100+ models, some free
-
-**Together AI ($25 Free Credit)**
-- Get key: https://api.together.xyz/settings/api-keys
-- $25 credit for new users
-
-## Cloud Sync Setup
-
-### Dropbox Setup
-1. Create an app at [Dropbox App Console](https://www.dropbox.com/developers/apps)
-2. Choose "Scoped access" and "App folder"
-3. In Permissions tab, enable `files.content.write` and `files.content.read`
-4. In Settings tab, add OAuth2 Redirect URI: `com.romreviewertools.noteitup://oauth2callback`
-5. Copy `ApiKeys.kt.template` to `ApiKeys.kt` and add your App Key and Secret
-
-### Google Drive Setup (Coming Soon)
-Instructions will be added when Google Drive integration is enabled.
-
-## Firebase Setup (Analytics & Crashlytics)
-
-1. Go to [Firebase Console](https://console.firebase.google.com/)
-2. Create a new project or select existing one
-3. Add an Android app with package name: `com.romreviewertools.noteitup`
-4. Download `google-services.json` and place it in `composeApp/` directory
-5. Enable **Analytics** and **Crashlytics** in Firebase Console
-
-The app uses Firebase for:
-- **Analytics**: Track user events and screen views
-- **Crashlytics**: Crash reporting and error tracking
-
-Note: `google-services.json` is gitignored for security. See `google-services.json.template` for the expected structure.
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
 
 ---
 
-Built with Kotlin Multiplatform & Compose Multiplatform
+## AI Setup Guide
+
+### Recommended: Groq (Free & Fast)
+
+1. Visit [Groq Console](https://console.groq.com/keys)
+2. Sign up for a free account
+3. Create an API key
+4. In NoteItUP: **Settings → AI Settings → Groq → Paste key**
+5. Tap **Test Connection** to verify
+
+### Other Providers
+
+| Provider | Get API Key | Notes |
+|----------|-------------|-------|
+| Google Gemini | [aistudio.google.com](https://aistudio.google.com/apikey) | Free: 1,500 req/day |
+| OpenAI | [platform.openai.com](https://platform.openai.com/api-keys) | Paid: ~$0.15-5/M tokens |
+| Anthropic | [console.anthropic.com](https://console.anthropic.com/settings/keys) | Paid: ~$3-15/M tokens |
+| OpenRouter | [openrouter.ai](https://openrouter.ai/keys) | Some free models |
+| Together AI | [api.together.xyz](https://api.together.xyz/settings/api-keys) | $25 free credit |
+
+---
+
+## Architecture
+
+The app follows **Clean Architecture** with **MVI** pattern:
+
+```
+composeApp/src/
+├── commonMain/          # Shared code (95%+)
+│   ├── data/            # Repositories, database, APIs
+│   ├── domain/          # Models, use cases
+│   └── presentation/    # Screens, ViewModels, UI
+├── androidMain/         # Android-specific
+├── iosMain/             # iOS-specific
+└── jvmMain/             # Desktop-specific
+```
+
+**Key Patterns:**
+- `expect/actual` for platform-specific code
+- Unidirectional data flow with StateFlow
+- Repository pattern for data access
+- Dependency injection with Koin
+
+---
+
+## Contributing
+
+Contributions are welcome! Here's how you can help:
+
+1. **Fork** the repository
+2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
+3. **Commit** your changes (`git commit -m 'Add amazing feature'`)
+4. **Push** to the branch (`git push origin feature/amazing-feature`)
+5. **Open** a Pull Request
+
+### Ideas for Contributions
+- 🌐 Translations to other languages
+- 🎨 New themes and color schemes
+- 🐛 Bug fixes and performance improvements
+- 📝 Documentation improvements
+- ✨ New features
+
+---
+
+## License
+
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## Support
+
+- ⭐ **Star** this repo if you find it useful
+- 🐛 **Report bugs** via [GitHub Issues](https://github.com/romreviewer/NoteItUP/issues)
+- 💡 **Request features** via [GitHub Discussions](https://github.com/romreviewer/NoteItUP/discussions)
+- 📧 **Contact**: Open an issue for questions
+
+---
+
+<p align="center">
+  Built with ❤️ using Kotlin Multiplatform & Compose Multiplatform
+</p>
+
+<p align="center">
+  <a href="https://github.com/romreviewer/NoteItUP">
+    <img src="https://img.shields.io/github/stars/romreviewer/NoteItUP?style=social" alt="GitHub Stars"/>
+  </a>
+</p>
