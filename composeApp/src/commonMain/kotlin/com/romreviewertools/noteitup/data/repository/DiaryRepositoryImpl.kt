@@ -13,6 +13,7 @@ import com.romreviewertools.noteitup.domain.model.ImageAttachment
 import com.romreviewertools.noteitup.domain.model.MonthlyEntryCount
 import com.romreviewertools.noteitup.domain.model.Mood
 import com.romreviewertools.noteitup.domain.model.Tag
+import com.romreviewertools.noteitup.domain.repository.BrainstormMessageData
 import com.romreviewertools.noteitup.domain.repository.DiaryRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -388,6 +389,39 @@ class DiaryRepositoryImpl(
     override suspend fun deleteAllImagesForEntry(entryId: String): Result<Unit> = runCatching {
         withContext(Dispatchers.IO) {
             queries.deleteImagesForEntry(entryId)
+        }
+    }
+
+    // Brainstorm message operations
+    override fun getBrainstormMessages(): Flow<List<BrainstormMessageData>> =
+        queries.getAllBrainstormMessages()
+            .asFlow()
+            .mapToList(Dispatchers.IO)
+            .map { entities ->
+                entities.map { entity ->
+                    BrainstormMessageData(
+                        id = entity.id,
+                        content = entity.content,
+                        isUser = entity.is_user == 1L,
+                        timestamp = entity.timestamp
+                    )
+                }
+            }
+
+    override suspend fun insertBrainstormMessage(
+        id: String,
+        content: String,
+        isUser: Boolean,
+        timestamp: Long
+    ): Result<Unit> = runCatching {
+        withContext(Dispatchers.IO) {
+            queries.insertBrainstormMessage(id, content, if (isUser) 1L else 0L, timestamp)
+        }
+    }
+
+    override suspend fun deleteAllBrainstormMessages(): Result<Unit> = runCatching {
+        withContext(Dispatchers.IO) {
+            queries.deleteAllBrainstormMessages()
         }
     }
 

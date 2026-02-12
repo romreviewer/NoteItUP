@@ -43,4 +43,16 @@ interface DiaryRepository {
     // Stats
     fun getStats(): Flow<DiaryStats>
     suspend fun getDetailedStats(): DetailedStats
+
+    // Brainstorm messages
+    fun getBrainstormMessages(): Flow<List<BrainstormMessageData>>
+    suspend fun insertBrainstormMessage(id: String, content: String, isUser: Boolean, timestamp: Long): Result<Unit>
+    suspend fun deleteAllBrainstormMessages(): Result<Unit>
 }
+
+data class BrainstormMessageData(
+    val id: String,
+    val content: String,
+    val isUser: Boolean,
+    val timestamp: Long
+)

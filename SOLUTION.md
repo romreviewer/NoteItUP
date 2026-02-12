@@ -548,7 +548,7 @@ commons-compress = "1.25.0"
 Cloud backup/sync with user's own storage (Google Drive & Dropbox).
 
 **Features implemented:**
-- [x] Google Drive integration with OAuth2
+- [x] Google Drive integration with OAuth2 (native Android auth via AuthorizationClient)
 - [x] Dropbox integration with OAuth2
 - [x] Encrypted backup bundles (AES-256-GCM)
 - [x] Password-based key derivation (PBKDF2 with 100k iterations)
@@ -565,6 +565,7 @@ Cloud backup/sync with user's own storage (Google Drive & Dropbox).
 | `EncryptionService` | Platform-specific AES-256-GCM encryption (expect/actual) |
 | `EncryptedBundleService` | Creates/extracts encrypted backup bundles |
 | `GoogleDriveProvider` | Google Drive API v3 with OAuth2 |
+| `GoogleDriveAuthHelper` | Android native auth bridge (AuthorizationClient + CompletableDeferred) |
 | `DropboxProvider` | Dropbox API v2 with OAuth2 |
 | `CloudSyncManager` | Orchestrates sync operations |
 | `CloudSyncRepository` | Persists sync settings and tokens |
@@ -597,11 +598,27 @@ backup_TIMESTAMP.noteitup
 **Platform Implementations:**
 | Platform | Encryption | HTTP Client | OAuth |
 |----------|------------|-------------|-------|
-| Android | javax.crypto | Ktor + OkHttp | System browser |
+| Android | javax.crypto | Ktor + OkHttp | Native AuthorizationClient (Google Drive), System browser (Dropbox) |
 | iOS | CommonCrypto | Ktor + Darwin | UIApplication |
 | JVM | javax.crypto | Ktor + Java | Desktop browser |
 
-### Phase 7 - Import from Popular Apps (Mostly Completed)
+**Google Drive OAuth (Android - Native Flow):**
+```
+User taps Connect → AuthorizationClient.authorize() → Native Google consent UI
+                                                            ↓
+                                                    serverAuthCode
+                                                            ↓
+                                            Token exchange (no redirect_uri)
+                                                            ↓
+                                                    Access + Refresh tokens saved
+```
+- Uses `play-services-auth` (`AuthorizationClient`) instead of browser-based OAuth
+- `GoogleDriveAuthHelper` singleton bridges Activity callbacks with coroutines via `CompletableDeferred`
+- Token exchange omits `redirect_uri` (not needed for native auth codes)
+- iOS/JVM still use browser-based flow as fallback
+- Requires Android OAuth client in Google Cloud Console (matched by package name + SHA-1)
+
+### Phase 7 - Import from Popular Apps (Completed)
 
 **Import functionality from Day One and Joplin journaling apps.**
 
@@ -624,10 +641,14 @@ backup_TIMESTAMP.noteitup
   - Implemented using pure Kotlin TAR parser (no external dependencies)
   - Supports POSIX ustar format with prefix field for long paths
   - Day One import also works on iOS (uses ZipExporter)
+- [x] Joplin resource reference parsing (images in markdown content with `![](:/resource_id)` notation)
+  - Parses `![alt](:/resourceId)` references from note body
+  - Maps resource IDs to new image IDs and populates imageIds in entries
+  - Removes inline resource references from content (images display in gallery)
+  - Collapses resulting blank lines for clean content
 - [ ] Testing with real Day One export files
 - [ ] Testing with real Joplin JEX export files
 - [ ] Integration testing across all platforms
-- [ ] Joplin resource reference parsing (images in markdown content with `![](:/resource_id)` notation)
 - [ ] Large import performance optimization (1000+ entries)
 
 **Supported Import Formats:**
@@ -699,12 +720,11 @@ data class ImportResult(
 |----------|----------------|--------|
 | Android | Apache Commons Compress | ✅ Implemented |
 | JVM | Apache Commons Compress | ✅ Implemented |
-| iOS | Pending | ⏳ Not yet implemented |
+| iOS | Pure Kotlin TAR parser | ✅ Implemented |
 
 **Current Limitations:**
-- Joplin import only available on Android and Desktop (JVM) platforms
-- iOS users can import Day One archives but not Joplin JEX files until iOS TarExtractor is implemented
-- Images embedded in Joplin markdown content (resource references) are not yet parsed and linked
+- Testing with real-world export files still pending
+- Large import performance optimization (1000+ entries) not yet done
 
 ---
 
@@ -824,7 +844,7 @@ RichTextEditor(
 
 **Pending:**
 - [x] Brainstorming chat interface (implemented with starter prompts)
-- [ ] Conversation history storage (persistent across sessions)
+- [x] Conversation history storage (persistent across sessions via SQLDelight)
 - [ ] Token counting and cost estimation
 - [ ] Diff view for suggestions
 - [ ] Context awareness (reference previous entries)
@@ -993,8 +1013,6 @@ Users can choose from multiple popular AI APIs (bring your own API key):
 - [ ] Inline diff view for suggestions (side-by-side comparison)
 - [ ] Undo/redo for AI suggestions
 - [ ] Usage tracking (token counts, cost estimates)
-- [ ] Brainstorming chat interface
-- [ ] Conversation history storage
 - [ ] Context awareness (reference previous entries)
 
 #### BYOK (Bring Your Own Key) Advantages
@@ -1060,11 +1078,11 @@ Users can choose from multiple popular AI APIs (bring your own API key):
 - ✅ Built AIToolbar and AISuggestionDialog in editor
 - ✅ Added streaming response support infrastructure
 
-**Phase 8.3 - Brainstorming Chat Interface (⏳ Pending)**
-- [ ] Design chat UI with conversation history
-- [ ] Implement chat use case with context management
-- [ ] Create journaling prompts library
-- [ ] Add ability to insert AI responses into entries
+**Phase 8.3 - Brainstorming Chat Interface (✅ Completed)**
+- [x] Design chat UI with conversation history
+- [x] Persistent chat history via SQLDelight (BrainstormMessageEntity table)
+- [x] Create journaling starter prompts
+- [x] Add ability to insert AI responses into entries
 - [ ] Support for referencing previous diary entries (with permission)
 
 **Phase 8.4 - Provider Support & Polish (✅ Mostly Completed)**
@@ -1222,11 +1240,12 @@ Open `iosApp/iosApp.xcodeproj` in Xcode and run.
 | Feature | Android | Desktop (JVM) | iOS | Implementation Differences |
 |---------|---------|---------------|-----|---------------------------|
 | Multi-Window Support | ❌ Single activity | ✅ Full support | ❌ Single window | Desktop can open multiple windows with menu bar |
-| Joplin Import | ✅ Apache Commons | ✅ Apache Commons | ⏳ Pending | iOS needs TAR library |
+| Joplin Import | ✅ Apache Commons | ✅ Apache Commons | ✅ Pure Kotlin TAR | iOS uses custom TAR parser |
 | URL Opening | Chrome Custom Tabs | Desktop.browse() | UIApplication | Android has in-app browser |
 | Image Picker | Photo Picker API | Swing JFileChooser | PHPicker | Platform-native pickers |
 | File Picker | System Picker | Swing JFileChooser | UIDocument | Platform-native pickers |
-| OAuth | System Browser | localhost redirect | UIApplication | Desktop uses localhost:8080 |
+| OAuth (Google Drive) | Native AuthorizationClient | localhost redirect | UIApplication | Android uses Google Identity Services |
+| OAuth (Dropbox) | System Browser | localhost redirect | UIApplication | Desktop uses localhost:8080 |
 
 #### ❌ **Hardware/Platform-Dependent Features**
 
@@ -1401,7 +1420,7 @@ Desktop version is **fully functional** for journaling with the following notes:
 
 ---
 
-*This document reflects the current implementation as of Phase 8 (AI Integration - completed) plus Desktop Multi-Window Support. Phases 1-6 are fully implemented. Phase 7 (Day One and Joplin import) is functional on Android and Desktop platforms, with iOS TarExtractor implementation pending for Joplin support on iOS. Phase 7.5 (WYSIWYG Markdown Editor) and Phase 8 (API-Based AI Integration) are completed. Desktop multi-window support has been implemented with menu bar integration.*
+*This document reflects the current implementation as of Phase 9 (User Engagement & Analytics). Phases 1-6 are fully implemented. Phase 6 Cloud Sync now uses native Google Identity Services (AuthorizationClient) on Android for Google Drive OAuth. Phase 7 (Day One and Joplin import) is functional on all platforms including iOS. Phase 7.5 (WYSIWYG Markdown Editor), Phase 8 (API-Based AI Integration), and Phase 9 (Analytics & In-App Review) are completed. Brainstorm chat history is now persistent via SQLDelight. Desktop multi-window support has been implemented with menu bar integration.*
 
 ---
 
@@ -1410,40 +1429,31 @@ Desktop version is **fully functional** for journaling with the following notes:
 ### Critical UX Improvements
 
 **High Priority:**
-1. **Unsaved Changes Dialog on Editor Back Button** ⚠️ IMPORTANT
-   - **Problem:** Users can accidentally lose unsaved work when pressing back button
-   - **Solution:** Show confirmation dialog when back button is pressed with unsaved changes
-   - **Dialog Options:**
-     - "Save" - Save changes and navigate back
-     - "Discard" - Discard changes and navigate back
-     - "Cancel" - Stay on editor screen
-   - **Implementation Details:**
-     - Detect unsaved changes by comparing current editor state with loaded entry state
-     - Track changes in title, content, mood, tags, folder, images, location, and favorite status
-     - Show dialog only if there are actual changes (not on new empty entries)
-     - Debounce back button to prevent multiple rapid taps causing white screen issues
-   - **Status:** ⏳ Pending implementation
+1. ~~**Unsaved Changes Dialog on Editor Back Button**~~ ✅ **COMPLETED**
+   - BackHandler + top bar back button detect unsaved changes
+   - AlertDialog with Save/Discard/Cancel options
+   - Change detection via `checkForChanges()` comparing current state with original entry
 
 ### Phase 7 Remaining Tasks
 
-**High Priority:**
+**Completed:**
 1. ~~**iOS TarExtractor Implementation**~~ ✅ **COMPLETED**
    - Implemented using pure Kotlin TAR parser (no external dependencies)
    - Supports POSIX ustar format with prefix field for long paths
    - Joplin import now works on all platforms including iOS
 
-**Medium Priority:**
-2. **Real-world Testing**
+2. ~~**Joplin Image Resource Parsing**~~ ✅ **COMPLETED**
+   - Parses `![](:/resource_id)` references in Joplin markdown note bodies
+   - Maps old resource IDs to new image IDs via `resourceIdMap`
+   - Removes inline resource references from content (images display in gallery)
+   - Improved image file matching for Joplin resources (no-extension files)
+
+**Remaining:**
+3. **Real-world Testing**
    - Test with actual Day One export files from users
    - Test with actual Joplin JEX exports
    - Validate edge cases and large imports
 
-3. **Joplin Image Resource Parsing**
-   - Parse `![](:/resource_id)` references in Joplin markdown
-   - Map old resource IDs to new image IDs
-   - Update markdown content with correct image references
-
-**Low Priority:**
 4. **Performance Optimization**
    - Test with 1000+ entry imports
    - Optimize batch database operations
@@ -1451,23 +1461,25 @@ Desktop version is **fully functional** for journaling with the following notes:
 
 ### Phase 8 Remaining Tasks
 
-**High Priority:**
-1. **Brainstorming Chat Interface**
-   - Design chat UI with conversation history
-   - Implement chat use case with context management
-   - Create journaling prompts library
-   - Add ability to insert AI responses into entries
+**Completed:**
+1. ~~**Brainstorming Chat Interface**~~ ✅ **COMPLETED**
+   - Full chat UI with message bubbles and starter prompts
+   - AI integration with copy and insert-to-entry functionality
 
-**Medium Priority:**
-2. **Advanced Features**
-   - Token counting and cost estimation
-   - Diff view for AI suggestions (side-by-side comparison)
-   - Undo/redo for AI suggestions
-   - Usage analytics and cost tracking
+2. ~~**Persistent Conversation History**~~ ✅ **COMPLETED**
+   - `BrainstormMessageEntity` table in SQLDelight (id, content, is_user, timestamp)
+   - Schema migration (v2→v3) for existing users
+   - Repository methods: `getBrainstormMessages()` (reactive Flow), `insertBrainstormMessage()`, `deleteAllBrainstormMessages()`
+   - ViewModel driven by Flow — messages persist across screen navigation and app restarts
+   - "Clear Chat" deletes all persisted messages
 
-**Low Priority:**
-3. **Enhancements**
-   - Context awareness (reference previous diary entries)
-   - Multi-language support for AI prompts
-   - Advanced prompt templates library
-   - Comprehensive cross-platform testing
+**Remaining:**
+3. **Advanced Features**
+   - [ ] Token counting and cost estimation
+   - [ ] Diff view for AI suggestions (side-by-side comparison)
+   - [ ] Undo/redo for AI suggestions
+
+4. **Enhancements**
+   - [ ] Context awareness (reference previous diary entries)
+   - [ ] Multi-language support for AI prompts
+   - [ ] Advanced prompt templates library

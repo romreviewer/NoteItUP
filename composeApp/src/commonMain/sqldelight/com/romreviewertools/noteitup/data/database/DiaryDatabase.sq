@@ -206,3 +206,22 @@ DELETE FROM ImageAttachmentEntity WHERE entry_id = ?;
 
 getImageCount:
 SELECT COUNT(*) FROM ImageAttachmentEntity WHERE entry_id = ?;
+
+-- Brainstorm Message table
+CREATE TABLE BrainstormMessageEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    content TEXT NOT NULL,
+    is_user INTEGER NOT NULL DEFAULT 0,
+    timestamp INTEGER NOT NULL
+);
+
+-- Brainstorm Message Queries
+getAllBrainstormMessages:
+SELECT * FROM BrainstormMessageEntity ORDER BY timestamp ASC;
+
+insertBrainstormMessage:
+INSERT OR REPLACE INTO BrainstormMessageEntity(id, content, is_user, timestamp)
+VALUES (?, ?, ?, ?);
+
+deleteAllBrainstormMessages:
+DELETE FROM BrainstormMessageEntity;

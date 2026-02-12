@@ -1,0 +1,8 @@
+-- Migration from version 2 to version 3
+-- Add BrainstormMessageEntity table for persistent brainstorm chat history
+CREATE TABLE IF NOT EXISTS BrainstormMessageEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    content TEXT NOT NULL,
+    is_user INTEGER NOT NULL DEFAULT 0,
+    timestamp INTEGER NOT NULL
+);

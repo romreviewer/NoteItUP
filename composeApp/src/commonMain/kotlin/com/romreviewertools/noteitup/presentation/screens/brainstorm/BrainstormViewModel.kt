@@ -6,6 +6,7 @@ import com.romreviewertools.noteitup.data.ai.ChatMessage
 import com.romreviewertools.noteitup.data.analytics.AnalyticsEvent
 import com.romreviewertools.noteitup.data.analytics.AnalyticsService
 import com.romreviewertools.noteitup.data.repository.AISettingsRepository
+import com.romreviewertools.noteitup.domain.repository.DiaryRepository
 import com.romreviewertools.noteitup.domain.usecase.ChatUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,7 +20,8 @@ import kotlinx.coroutines.launch
 class BrainstormViewModel(
     private val chatUseCase: ChatUseCase,
     private val aiSettingsRepository: AISettingsRepository,
-    private val analyticsService: AnalyticsService
+    private val analyticsService: AnalyticsService,
+    private val diaryRepository: DiaryRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(BrainstormUiState())
@@ -28,6 +30,26 @@ class BrainstormViewModel(
     init {
         analyticsService.logEvent(AnalyticsEvent.ScreenViewBrainstorm)
         observeAISettings()
+        observeBrainstormMessages()
+    }
+
+    private fun observeBrainstormMessages() {
+        viewModelScope.launch {
+            diaryRepository.getBrainstormMessages().collect { messages ->
+                _uiState.update { state ->
+                    state.copy(
+                        messages = messages.map { msg ->
+                            ChatMessageUi(
+                                id = msg.id,
+                                content = msg.content,
+                                isUser = msg.isUser,
+                                timestamp = msg.timestamp
+                            )
+                        }
+                    )
+                }
+            }
+        }
     }
 
     private fun observeAISettings() {
@@ -64,25 +86,24 @@ class BrainstormViewModel(
         analyticsService.logEvent(AnalyticsEvent.BrainstormMessageSent)
 
         viewModelScope.launch {
-            // Add user message to UI
-            val userMessage = ChatMessageUi(
-                id = System.currentTimeMillis().toString(),
+            val userTimestamp = System.currentTimeMillis()
+            val userMessageId = userTimestamp.toString()
+
+            // Persist user message (Flow will update UI)
+            diaryRepository.insertBrainstormMessage(
+                id = userMessageId,
                 content = message,
                 isUser = true,
-                timestamp = System.currentTimeMillis()
+                timestamp = userTimestamp
             )
 
             _uiState.update {
-                it.copy(
-                    messages = it.messages + userMessage,
-                    isLoading = true,
-                    error = null
-                )
+                it.copy(isLoading = true, error = null)
             }
 
-            // Build conversation history for API
+            // Build conversation history for API (exclude the message we just added)
             val conversationHistory = _uiState.value.messages
-                .filter { it.id != userMessage.id } // Exclude the message we just added
+                .filter { it.id != userMessageId }
                 .map { msg ->
                     ChatMessage(
                         role = if (msg.isUser) "user" else "assistant",
@@ -95,18 +116,14 @@ class BrainstormViewModel(
 
             result.fold(
                 onSuccess = { response ->
-                    val assistantMessage = ChatMessageUi(
-                        id = (System.currentTimeMillis() + 1).toString(),
+                    val assistantTimestamp = System.currentTimeMillis()
+                    diaryRepository.insertBrainstormMessage(
+                        id = assistantTimestamp.toString(),
                         content = response,
                         isUser = false,
-                        timestamp = System.currentTimeMillis()
+                        timestamp = assistantTimestamp
                     )
-                    _uiState.update {
-                        it.copy(
-                            messages = it.messages + assistantMessage,
-                            isLoading = false
-                        )
-                    }
+                    _uiState.update { it.copy(isLoading = false) }
                 },
                 onFailure = { error ->
                     _uiState.update {
@@ -121,11 +138,9 @@ class BrainstormViewModel(
     }
 
     private fun clearChat() {
-        _uiState.update {
-            it.copy(
-                messages = emptyList(),
-                error = null
-            )
+        viewModelScope.launch {
+            diaryRepository.deleteAllBrainstormMessages()
+            _uiState.update { it.copy(error = null) }
         }
     }
 
