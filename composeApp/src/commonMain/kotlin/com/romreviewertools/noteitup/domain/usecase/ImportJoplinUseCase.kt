@@ -51,11 +51,15 @@ class ImportJoplinUseCase(
             val exportData = joplinParser.parseJoplinArchive(fileContents).getOrThrow()
 
             // 4. Import data using shared logic
+            // Include all non-JSON/MD files as potential image resources
+            // Joplin stores resources as <resourceId> (no extension) or with extension
             val imageFiles = extractedFiles.filterKeys { filename ->
-                // Filter for image resources
-                filename.endsWith(".jpg") || filename.endsWith(".jpeg") ||
-                filename.endsWith(".png") || filename.endsWith(".gif") ||
-                filename.endsWith(".webp")
+                val lower = filename.lowercase()
+                lower.endsWith(".jpg") || lower.endsWith(".jpeg") ||
+                lower.endsWith(".png") || lower.endsWith(".gif") ||
+                lower.endsWith(".webp") ||
+                // Also include files without extensions (Joplin resource files)
+                (!lower.endsWith(".json") && !lower.endsWith(".md"))
             }
             val result = importExportData(exportData, imageFiles, imagePicker)
 
@@ -138,9 +142,15 @@ class ImportJoplinUseCase(
         val imageMap = mutableMapOf<String, ImageAttachment>()
         exportData.images.forEach { exportImage ->
             runCatching {
+                // Try matching by exact filename, then by suffix, then by basename
                 val filePath = extractedImages[exportImage.fileName]
                     ?: extractedImages.entries.firstOrNull {
                         it.key.endsWith(exportImage.fileName)
+                    }?.value
+                    ?: extractedImages.entries.firstOrNull { (key, _) ->
+                        // Match by file basename (for Joplin resources stored as <id> without ext)
+                        val basename = key.substringAfterLast("/")
+                        basename == exportImage.fileName || basename.substringBeforeLast(".") == exportImage.fileName
                     }?.value
 
                 if (filePath != null) {

@@ -98,13 +98,21 @@ fun CloudSyncScreen(
                 )
             }
 
-            // Google Drive - Coming Soon
+            // Google Drive
             item {
-                ComingSoonProviderCard(
-                    providerName = "Google Drive",
+                ProviderCard(
+                    provider = CloudProviderType.GOOGLE_DRIVE,
+                    isConnected = uiState.googleDriveConnected,
+                    quota = uiState.googleDriveQuota,
+                    isSyncing = uiState.isSyncing,
+                    onConnect = { viewModel.handleIntent(CloudSyncIntent.ConnectProvider(CloudProviderType.GOOGLE_DRIVE)) },
+                    onDisconnect = { viewModel.handleIntent(CloudSyncIntent.DisconnectProvider(CloudProviderType.GOOGLE_DRIVE)) },
+                    onBackup = { viewModel.handleIntent(CloudSyncIntent.StartBackup(CloudProviderType.GOOGLE_DRIVE)) },
+                    onRestore = { viewModel.handleIntent(CloudSyncIntent.ShowBackupList(CloudProviderType.GOOGLE_DRIVE)) }
                 )
             }
 
+            // Dropbox
             item {
                 ProviderCard(
                     provider = CloudProviderType.DROPBOX,
@@ -409,49 +417,6 @@ private fun ProviderCard(
                         Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(4.dp))
                         Text("Restore")
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ComingSoonProviderCard(
-    providerName: String
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        )
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Cloud,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.outline
-                    )
-                    Column {
-                        Text(
-                            text = providerName,
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = "Coming soon",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.outline
-                        )
                     }
                 }
             }

@@ -70,8 +70,8 @@ class CloudSyncManager(
     /**
      * Handle OAuth callback after user authorization.
      */
-    suspend fun handleOAuthCallback(provider: CloudProviderType, code: String): CloudResult<Unit> {
-        return getProvider(provider).handleAuthCallback(code)
+    suspend fun handleOAuthCallback(provider: CloudProviderType, code: String, redirectUri: String? = null): CloudResult<Unit> {
+        return getProvider(provider).handleAuthCallback(code, redirectUri)
     }
 
     /**

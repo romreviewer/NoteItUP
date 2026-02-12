@@ -39,6 +39,7 @@ firebase-crashlytics-plugin = "3.0.2"
 
 # Play Services
 play-review = "2.0.2"
+play-services-auth = "21.3.0"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -105,6 +106,9 @@ firebase-crashlytics = { module = "com.google.firebase:firebase-crashlytics-ktx"
 
 # Play Review
 play-review = { module = "com.google.android.play:review-ktx", version.ref = "play-review" }
+
+# Play Services Auth
+play-services-auth = { module = "com.google.android.gms:play-services-auth", version.ref = "play-services-auth" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

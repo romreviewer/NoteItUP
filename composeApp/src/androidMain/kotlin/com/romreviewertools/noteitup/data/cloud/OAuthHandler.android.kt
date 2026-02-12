@@ -25,4 +25,8 @@ actual class OAuthHandler(private val context: Context) {
             CloudProviderType.DROPBOX -> "db-${BuildConfig.DROPBOX_APP_KEY}://2/token"
         }
     }
+
+    actual suspend fun startNativeGoogleAuth(): String? {
+        return GoogleDriveAuthHelper.authorize(BuildConfig.GOOGLE_CLIENT_ID)
+    }
 }

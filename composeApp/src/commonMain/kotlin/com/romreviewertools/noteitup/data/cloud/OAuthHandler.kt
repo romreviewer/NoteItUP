@@ -16,4 +16,11 @@ expect class OAuthHandler {
      * Returns a platform-appropriate redirect URI.
      */
     fun getRedirectUri(provider: CloudProviderType): String
+
+    /**
+     * Attempts native Google Sign-In (Android only).
+     * Returns a server auth code on success, or null if unavailable/cancelled.
+     * Non-Android platforms return null to fall through to browser flow.
+     */
+    suspend fun startNativeGoogleAuth(): String?
 }

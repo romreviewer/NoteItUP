@@ -70,6 +70,9 @@ kotlin {
             // Play In-App Review
             implementation(libs.play.review)
 
+            // Google Identity Services (native Google Sign-In for Drive OAuth)
+            implementation(libs.play.services.auth)
+
             // Firebase (using BOM via dependencies block below)
         }
         commonMain.dependencies {
@@ -151,8 +154,8 @@ android {
         applicationId = "com.romreviewertools.noteitup"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 9
-        versionName = "1.3.0"
+        versionCode = 10
+        versionName = "1.4.0"
 
         // API Keys from local.properties (gitignored)
         val dropboxAppKey = localProperties.getProperty("DROPBOX_APP_KEY", "")

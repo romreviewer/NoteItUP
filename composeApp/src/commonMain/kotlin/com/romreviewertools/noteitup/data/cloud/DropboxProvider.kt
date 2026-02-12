@@ -81,7 +81,7 @@ class DropboxProvider(
                 "code_challenge_method=plain"
     }
 
-    override suspend fun handleAuthCallback(code: String): CloudResult<Unit> {
+    override suspend fun handleAuthCallback(code: String, redirectUri: String?): CloudResult<Unit> {
         return try {
             val redirectUri = oAuthHandler.getRedirectUri(type)
             val verifier = codeVerifier ?: return CloudResult.Error("PKCE verifier not found. Please try again.")

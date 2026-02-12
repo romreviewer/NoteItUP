@@ -125,13 +125,24 @@ class JoplinParser {
             )
         }
 
+        // Build set of image resource IDs for quick lookup
+        val imageResourceIds = imageResources.map { it.id }.toSet()
+
         // Transform notes to entries
         val exportEntries = notes.map { note ->
-            val content = if (note.isTodo == 1) {
+            val rawContent = if (note.isTodo == 1) {
                 transformTodoContent(note.body, note.todoCompleted == 1)
             } else {
                 note.body
             }
+
+            // Parse resource references from body: ![alt](:/resourceId)
+            val referencedImageIds = parseResourceReferences(rawContent)
+                .filter { it in imageResourceIds }
+                .mapNotNull { resourceIdMap[it] }
+
+            // Remove inline resource references from content since images display in a gallery
+            val content = removeResourceReferences(rawContent)
 
             val location = if (note.latitude != null && note.longitude != null) {
                 Location(
@@ -154,7 +165,7 @@ class JoplinParser {
                 mood = null,
                 folderId = note.parentId?.let { notebookIdMap[it] },
                 tagIds = noteToTagsMap[note.id] ?: emptyList(),
-                imageIds = emptyList(), // TODO: Parse resource references from body
+                imageIds = referencedImageIds,
                 location = location
             )
         }
@@ -174,5 +185,36 @@ class JoplinParser {
     private fun transformTodoContent(body: String, completed: Boolean): String {
         val checkbox = if (completed) "- [x]" else "- [ ]"
         return "$checkbox TODO\n\n$body"
+    }
+
+    /**
+     * Extracts Joplin resource IDs from markdown content.
+     * Joplin uses the format: ![alt text](:/resourceId)
+     */
+    private fun parseResourceReferences(content: String): List<String> {
+        val resourceIds = mutableListOf<String>()
+        // Match ![...](:/32characterHexId) - Joplin resource references
+        val regex = Regex("""!\[.*?]\(:/([a-f0-9]{32})\)""")
+        regex.findAll(content).forEach { match ->
+            resourceIds.add(match.groupValues[1])
+        }
+        return resourceIds
+    }
+
+    /**
+     * Removes Joplin resource references from content.
+     * Since images are displayed in a separate gallery in NoteItUP,
+     * inline references are cleaned up to avoid broken links.
+     */
+    private fun removeResourceReferences(content: String): String {
+        // Remove lines that only contain a resource reference (common pattern)
+        val lineRegex = Regex("""^\s*!\[.*?]\(:/[a-f0-9]{32}\)\s*$""", RegexOption.MULTILINE)
+        var cleaned = lineRegex.replace(content, "")
+        // Remove any remaining inline resource references
+        val inlineRegex = Regex("""!\[.*?]\(:/[a-f0-9]{32}\)""")
+        cleaned = inlineRegex.replace(cleaned, "")
+        // Collapse multiple blank lines into at most two
+        cleaned = cleaned.replace(Regex("""\n{3,}"""), "\n\n")
+        return cleaned.trim()
     }
 }

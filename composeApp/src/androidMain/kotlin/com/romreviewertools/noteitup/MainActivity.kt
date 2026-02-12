@@ -4,10 +4,13 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.IntentSenderRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.fragment.app.FragmentActivity
 import com.romreviewertools.noteitup.data.cloud.CloudProviderType
+import com.romreviewertools.noteitup.data.cloud.GoogleDriveAuthHelper
 import com.romreviewertools.noteitup.data.review.InAppReviewManager
 import com.romreviewertools.noteitup.data.security.ActivityHolder
 import com.romreviewertools.noteitup.presentation.screens.cloudsync.OAuthCallback
@@ -16,6 +19,12 @@ import org.koin.android.ext.android.inject
 
 class MainActivity : FragmentActivity() {
     private val inAppReviewManager: InAppReviewManager by inject()
+
+    private val googleAuthLauncher = registerForActivityResult(
+        ActivityResultContracts.StartIntentSenderForResult()
+    ) { result ->
+        GoogleDriveAuthHelper.handleAuthResult(result.resultCode, result.data)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -26,6 +35,9 @@ class MainActivity : FragmentActivity() {
 
         // Register activity for in-app review
         inAppReviewManager.setActivity(this)
+
+        // Register activity for Google Drive native auth
+        GoogleDriveAuthHelper.init(this, googleAuthLauncher)
 
         // Handle OAuth callback from initial launch
         handleOAuthIntent(intent)
@@ -39,12 +51,14 @@ class MainActivity : FragmentActivity() {
         super.onResume()
         ActivityHolder.setActivity(this)
         inAppReviewManager.setActivity(this)
+        GoogleDriveAuthHelper.init(this, googleAuthLauncher)
     }
 
     override fun onDestroy() {
         super.onDestroy()
         ActivityHolder.clearActivity()
         inAppReviewManager.clearActivity()
+        GoogleDriveAuthHelper.clear()
     }
 
     override fun onNewIntent(intent: Intent) {

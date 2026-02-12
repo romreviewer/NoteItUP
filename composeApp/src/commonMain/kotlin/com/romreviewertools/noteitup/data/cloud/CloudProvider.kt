@@ -67,8 +67,9 @@ interface CloudProvider {
      * Handles the OAuth callback after user authorizes the app.
      *
      * @param code The authorization code from the OAuth callback
+     * @param redirectUri Optional override for the redirect URI used in token exchange
      */
-    suspend fun handleAuthCallback(code: String): CloudResult<Unit>
+    suspend fun handleAuthCallback(code: String, redirectUri: String? = null): CloudResult<Unit>
 
     /**
      * Disconnects from the cloud provider and clears stored tokens.

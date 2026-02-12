@@ -58,16 +58,18 @@ class GoogleDriveProvider(
                 "prompt=consent"
     }
 
-    override suspend fun handleAuthCallback(code: String): CloudResult<Unit> {
+    override suspend fun handleAuthCallback(code: String, redirectUri: String?): CloudResult<Unit> {
         return try {
-            val redirectUri = oAuthHandler.getRedirectUri(type)
             val response: HttpResponse = httpClient.submitForm(
                 url = TOKEN_URL,
                 formParameters = parameters {
                     append("code", code)
                     append("client_id", clientId)
                     append("client_secret", clientSecret)
-                    append("redirect_uri", redirectUri)
+                    // For native Android auth codes, omit redirect_uri entirely
+                    if (redirectUri != "native") {
+                        append("redirect_uri", redirectUri ?: oAuthHandler.getRedirectUri(type))
+                    }
                     append("grant_type", "authorization_code")
                 }
             )

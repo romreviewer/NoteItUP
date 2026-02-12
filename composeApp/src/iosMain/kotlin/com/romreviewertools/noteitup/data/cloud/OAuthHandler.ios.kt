@@ -20,4 +20,6 @@ actual class OAuthHandler {
             CloudProviderType.DROPBOX -> "com.romreviewertools.noteitup:/oauth2callback/dropbox"
         }
     }
+
+    actual suspend fun startNativeGoogleAuth(): String? = null
 }

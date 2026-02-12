@@ -113,6 +113,23 @@ class CloudSyncViewModel(
     private fun connectProvider(provider: CloudProviderType) {
         viewModelScope.launch {
             try {
+                // For Google Drive, try native auth first (Android only)
+                if (provider == CloudProviderType.GOOGLE_DRIVE) {
+                    val nativeCode = oAuthHandler.startNativeGoogleAuth()
+                    if (nativeCode != null) {
+                        // Got auth code via native flow — exchange without redirect_uri
+                        handleOAuthCallback(provider, nativeCode, redirectUri = "native")
+                        return@launch
+                    }
+                    // On Android, native auth returned null = cancelled/failed.
+                    // Android uses custom scheme redirect which Google blocks, so don't fall through.
+                    val redirectUri = oAuthHandler.getRedirectUri(provider)
+                    if (!redirectUri.startsWith("http")) {
+                        _uiState.update { it.copy(errorMessage = "Google sign-in was cancelled. Please try again.") }
+                        return@launch
+                    }
+                    // On iOS/JVM (http-based redirect), fall through to browser flow
+                }
                 val authUrl = cloudSyncManager.startOAuthFlow(provider)
                 oAuthHandler.openAuthUrl(authUrl)
             } catch (e: Exception) {
@@ -121,7 +138,7 @@ class CloudSyncViewModel(
         }
     }
 
-    private fun handleOAuthCallback(provider: CloudProviderType, code: String) {
+    private fun handleOAuthCallback(provider: CloudProviderType, code: String, redirectUri: String? = null) {
         viewModelScope.launch {
             // Show loading state
             _uiState.update { it.copy(
@@ -130,7 +147,7 @@ class CloudSyncViewModel(
             ) }
 
             try {
-                when (val result = cloudSyncManager.handleOAuthCallback(provider, code)) {
+                when (val result = cloudSyncManager.handleOAuthCallback(provider, code, redirectUri)) {
                     is CloudResult.Success -> {
                         _uiState.update { it.copy(
                             isAuthenticating = false,

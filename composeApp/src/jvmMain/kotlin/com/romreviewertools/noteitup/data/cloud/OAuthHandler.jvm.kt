@@ -22,4 +22,6 @@ actual class OAuthHandler {
             CloudProviderType.DROPBOX -> "http://localhost:8080/oauth2callback/dropbox"
         }
     }
+
+    actual suspend fun startNativeGoogleAuth(): String? = null
 }
