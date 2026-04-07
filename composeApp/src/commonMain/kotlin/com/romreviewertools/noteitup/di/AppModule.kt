@@ -145,12 +145,16 @@ val aiModule = module {
     // AI settings repository with secure API key storage
     singleOf(::AISettingsRepository)
 
-    // AI service for making API calls
+    // AI service for making API calls (now also handles local inference)
     singleOf(::AIService)
 
     // AI use cases
     factoryOf(::ImproveTextUseCase)
     factoryOf(::ChatUseCase)
+
+    // Note: LocalInferenceEngine and ModelDownloadManager are registered
+    // in platform-specific modules (androidModule, jvmModule, iosModule)
+    // because they require platform-specific constructor parameters.
 }
 
 val viewModelModule = module {

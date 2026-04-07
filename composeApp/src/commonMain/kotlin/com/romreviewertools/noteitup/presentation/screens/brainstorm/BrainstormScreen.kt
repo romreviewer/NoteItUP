@@ -109,6 +109,13 @@ fun BrainstormScreen(
         }
     }
 
+    // Show status message (e.g. "Loading AI model for first use...")
+    LaunchedEffect(uiState.statusMessage) {
+        uiState.statusMessage?.let {
+            snackbarHostState.showSnackbar(it)
+        }
+    }
+
     // Show error
     LaunchedEffect(uiState.error) {
         uiState.error?.let {

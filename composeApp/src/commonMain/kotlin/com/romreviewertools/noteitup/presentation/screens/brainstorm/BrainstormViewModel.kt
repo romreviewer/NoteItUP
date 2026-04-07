@@ -112,7 +112,15 @@ class BrainstormViewModel(
                 }
 
             // Get AI response
-            val result = chatUseCase.sendMessage(message, conversationHistory)
+            val result = chatUseCase.sendMessage(
+                userMessage = message,
+                conversationHistory = conversationHistory,
+                onModelLoading = {
+                    _uiState.update {
+                        it.copy(statusMessage = "Loading AI model for first use...")
+                    }
+                }
+            )
 
             result.fold(
                 onSuccess = { response ->
@@ -123,12 +131,13 @@ class BrainstormViewModel(
                         isUser = false,
                         timestamp = assistantTimestamp
                     )
-                    _uiState.update { it.copy(isLoading = false) }
+                    _uiState.update { it.copy(isLoading = false, statusMessage = null) }
                 },
                 onFailure = { error ->
                     _uiState.update {
                         it.copy(
                             isLoading = false,
+                            statusMessage = null,
                             error = error.message ?: "An error occurred"
                         )
                     }
@@ -172,6 +181,7 @@ data class BrainstormUiState(
     val messages: List<ChatMessageUi> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
+    val statusMessage: String? = null, // Transient info e.g. "Loading AI model..."
     val isAIConfigured: Boolean = true,
     val textToCopy: String? = null,
     val textToInsert: String? = null

@@ -1,5 +1,7 @@
 package com.romreviewertools.noteitup.di
 
+import com.romreviewertools.noteitup.data.ai.LocalInferenceEngine
+import com.romreviewertools.noteitup.data.ai.ModelDownloadManager
 import com.romreviewertools.noteitup.data.analytics.AnalyticsService
 import com.romreviewertools.noteitup.data.cloud.OAuthHandler
 import com.romreviewertools.noteitup.data.database.DriverFactory
@@ -38,6 +40,10 @@ val androidModule = module {
     single { ImagePicker(androidContext()) }
     single { LocationService(androidContext()) }
     single { UrlOpener() }
+
+    // Local AI (LiteRT-LM)
+    single { LocalInferenceEngine(androidContext()) }
+    single { ModelDownloadManager(androidContext(), get()) }
 
     // Analytics & Review
     single { AnalyticsService(androidContext()) }

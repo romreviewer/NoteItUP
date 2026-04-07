@@ -15,19 +15,27 @@ import kotlinx.coroutines.flow.firstOrNull
 
 /**
  * Service for interacting with AI providers using OpenAI-compatible APIs
+ * and local on-device inference via LiteRT-LM.
  */
 class AIService(
     private val httpClient: HttpClient,
-    private val aiSettingsRepository: AISettingsRepository
+    private val aiSettingsRepository: AISettingsRepository,
+    private val localInferenceEngine: LocalInferenceEngine,
+    private val modelDownloadManager: ModelDownloadManager
 ) {
 
     /**
-     * Test connection to AI provider
+     * Test connection to AI provider (or test local model)
      */
     suspend fun testConnection(): Result<String> {
         return try {
             val settings = aiSettingsRepository.aiSettings.firstOrNull()
                 ?: return Result.failure(Exception("AI settings not found"))
+
+            // Local provider: test on-device inference
+            if (settings.selectedProvider == AIProvider.LOCAL_GEMMA) {
+                return testLocalModel()
+            }
 
             if (settings.apiKey.isBlank()) {
                 return Result.failure(Exception("API key is required"))
@@ -58,11 +66,35 @@ class AIService(
     }
 
     /**
-     * Improve text using specified improvement type
+     * Test local model by running a minimal inference.
+     * Auto-loads the model if downloaded but not in memory.
+     */
+    private suspend fun testLocalModel(): Result<String> {
+        return try {
+            if (!localInferenceEngine.isModelLoaded()) {
+                val modelPath = modelDownloadManager.getModelPath()
+                    ?: return Result.failure(Exception("Model not downloaded. Download it first."))
+                localInferenceEngine.loadModel(modelPath)
+            }
+            val response = localInferenceEngine.generateResponse(
+                systemPrompt = "",
+                userMessage = "Hello",
+                maxTokens = 10
+            )
+            Result.success("Local model working! Response: ${response.take(50)}")
+        } catch (e: Exception) {
+            Result.failure(Exception("Local model test failed: ${e.message}"))
+        }
+    }
+
+    /**
+     * Improve text using specified improvement type.
+     * @param onModelLoading Called when the local model starts loading for the first time in this session.
      */
     suspend fun improveText(
         text: String,
-        improvementType: ImprovementType
+        improvementType: ImprovementType,
+        onModelLoading: (() -> Unit)? = null
     ): Result<String> {
         return try {
             val settings = aiSettingsRepository.aiSettings.firstOrNull()
@@ -72,6 +104,16 @@ class AIService(
                 return Result.failure(Exception("AI features are disabled"))
             }
 
+            // Local provider: use on-device inference
+            if (settings.selectedProvider == AIProvider.LOCAL_GEMMA) {
+                return makeLocalRequest(
+                    systemPrompt = improvementType.systemPrompt,
+                    userMessage = text,
+                    onModelLoading = onModelLoading
+                )
+            }
+
+            // Cloud providers: require API key
             if (settings.apiKey.isBlank()) {
                 return Result.failure(Exception("API key not configured"))
             }
@@ -110,11 +152,13 @@ class AIService(
     }
 
     /**
-     * Multi-turn chat conversation with AI
+     * Multi-turn chat conversation with AI.
+     * @param onModelLoading Called when the local model starts loading for the first time in this session.
      */
     suspend fun chat(
         systemPrompt: String,
-        messages: List<ChatMessage>
+        messages: List<ChatMessage>,
+        onModelLoading: (() -> Unit)? = null
     ): Result<String> {
         return try {
             val settings = aiSettingsRepository.aiSettings.firstOrNull()
@@ -124,6 +168,19 @@ class AIService(
                 return Result.failure(Exception("AI features are disabled"))
             }
 
+            // Local provider: use on-device inference
+            if (settings.selectedProvider == AIProvider.LOCAL_GEMMA) {
+                // For chat, combine conversation history into a single prompt
+                val userMessage = messages.lastOrNull { it.role == "user" }?.content
+                    ?: return Result.failure(Exception("No user message found"))
+                return makeLocalRequest(
+                    systemPrompt = systemPrompt,
+                    userMessage = userMessage,
+                    onModelLoading = onModelLoading
+                )
+            }
+
+            // Cloud providers: require API key
             if (settings.apiKey.isBlank()) {
                 return Result.failure(Exception("API key not configured"))
             }
@@ -153,6 +210,51 @@ class AIService(
             Result.success(responseText.trim())
         } catch (e: Exception) {
             Result.failure(Exception("Failed to get response: ${e.message}"))
+        }
+    }
+
+    /**
+     * Make a local inference request using on-device model.
+     *
+     * If the model is downloaded but not loaded, it will be auto-loaded on first use.
+     * The caller's loading indicator (spinner) will be visible during the load (~5-10s).
+     *
+     * @param onModelLoading Optional callback invoked when model loading starts,
+     *        so the caller can show a "Loading AI model..." message.
+     */
+    private suspend fun makeLocalRequest(
+        systemPrompt: String,
+        userMessage: String,
+        onModelLoading: (() -> Unit)? = null
+    ): Result<String> {
+        return try {
+            // Lazy auto-load: if model is downloaded but not in memory, load it now
+            if (!localInferenceEngine.isModelLoaded()) {
+                val modelPath = modelDownloadManager.getModelPath()
+                if (modelPath != null) {
+                    // Model downloaded but not loaded -- auto-load now
+                    onModelLoading?.invoke()
+                    try {
+                        localInferenceEngine.loadModel(modelPath)
+                        println("AIService: Auto-loaded local model from: $modelPath")
+                    } catch (e: Exception) {
+                        return Result.failure(Exception("Failed to load AI model: ${e.message}"))
+                    }
+                } else {
+                    // Model not downloaded at all
+                    return Result.failure(
+                        Exception("AI model not downloaded. Go to AI Settings to download the Gemma 4 model.")
+                    )
+                }
+            }
+
+            val response = localInferenceEngine.generateResponse(
+                systemPrompt = systemPrompt,
+                userMessage = userMessage
+            )
+            Result.success(response.trim())
+        } catch (e: Exception) {
+            Result.failure(Exception("Local AI error: ${e.message}"))
         }
     }
 
@@ -187,6 +289,9 @@ class AIService(
                     }
                     AIProvider.GEMINI -> {
                         // Handled above
+                    }
+                    AIProvider.LOCAL_GEMMA -> {
+                        // Should never reach here - local requests are handled separately
                     }
                 }
             }
@@ -305,6 +410,7 @@ class AIService(
             AIProvider.GROQ -> "${provider.baseUrl}/chat/completions"
             AIProvider.OPENROUTER -> "${provider.baseUrl}/chat/completions"
             AIProvider.TOGETHER -> "${provider.baseUrl}/chat/completions"
+            AIProvider.LOCAL_GEMMA -> "" // Not used - local requests bypass HTTP
         }
     }
 
@@ -319,6 +425,7 @@ class AIService(
             AIProvider.GROQ -> "llama-3.3-70b-versatile"
             AIProvider.OPENROUTER -> "meta-llama/llama-3.2-3b-instruct:free"
             AIProvider.TOGETHER -> "meta-llama/Llama-3-8b-chat-hf"
+            AIProvider.LOCAL_GEMMA -> "gemma-4-e2b" // Display name only, not used for API calls
         }
     }
 }

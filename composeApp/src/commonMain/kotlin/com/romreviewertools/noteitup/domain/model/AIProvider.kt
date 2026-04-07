@@ -2,7 +2,8 @@ package com.romreviewertools.noteitup.domain.model
 
 /**
  * Supported AI providers for text improvement and brainstorming.
- * Users bring their own API keys (BYOK model).
+ * Cloud providers use BYOK (Bring Your Own Key) model.
+ * LOCAL_GEMMA runs on-device via LiteRT-LM (no API key needed).
  */
 enum class AIProvider(
     val displayName: String,
@@ -11,6 +12,13 @@ enum class AIProvider(
     val description: String,
     val apiKeyUrl: String
 ) {
+    LOCAL_GEMMA(
+        displayName = "Local (Gemma 4)",
+        baseUrl = "",
+        hasFreeTier = true,
+        description = "Gemma 4 E2B - Private, on-device AI. No internet needed. Requires 8GB+ RAM.",
+        apiKeyUrl = ""
+    ),
     OPENAI(
         displayName = "OpenAI",
         baseUrl = "https://api.openai.com/v1",
@@ -52,7 +60,13 @@ enum class AIProvider(
         hasFreeTier = true,
         description = "Qwen, Llama, Mixtral - Open-source models with $25 free credit",
         apiKeyUrl = "https://api.together.xyz/settings/api-keys"
-    )
+    );
+
+    /** True if this provider runs inference on-device (no network/API key needed) */
+    val isLocal: Boolean get() = this == LOCAL_GEMMA
+
+    /** True if this provider requires an API key */
+    val requiresApiKey: Boolean get() = !isLocal
 }
 
 /**
@@ -71,7 +85,7 @@ data class AIModel(
  */
 data class AISettings(
     val enabled: Boolean = false,
-    val selectedProvider: AIProvider = AIProvider.GROQ,
+    val selectedProvider: AIProvider = AIProvider.LOCAL_GEMMA,
     val apiKey: String = "",
     val selectedModel: String = "",
     val streamingEnabled: Boolean = true

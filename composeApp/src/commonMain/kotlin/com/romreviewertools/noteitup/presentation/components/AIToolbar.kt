@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -31,6 +32,7 @@ import com.romreviewertools.noteitup.data.ai.ImprovementType
 fun AIToolbar(
     onImprovementSelected: (ImprovementType) -> Unit,
     isLoading: Boolean = false,
+    statusMessage: String? = null,
     onBrainstormClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
@@ -62,9 +64,22 @@ fun AIToolbar(
             }
 
             if (isLoading) {
-                CircularProgressIndicator(
+                // Show spinner + status message inline (visible even when keyboard is open)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.padding(vertical = 8.dp)
-                )
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        strokeWidth = 2.5.dp
+                    )
+                    Text(
+                        text = statusMessage ?: "Improving text...",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             } else {
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),

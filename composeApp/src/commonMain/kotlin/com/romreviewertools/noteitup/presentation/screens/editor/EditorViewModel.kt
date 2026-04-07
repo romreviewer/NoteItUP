@@ -442,7 +442,9 @@ class EditorViewModel(
 
     private fun improveText(improvementType: com.romreviewertools.noteitup.data.ai.ImprovementType) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isImprovingText = true, aiError = null, aiSuggestion = null) }
+            _uiState.update {
+                it.copy(isImprovingText = true, aiError = null, aiSuggestion = null, aiStatusMessage = null)
+            }
 
             try {
                 val textToImprove = _uiState.value.content
@@ -456,20 +458,31 @@ class EditorViewModel(
                     return@launch
                 }
 
-                val result = improveTextUseCase(textToImprove, improvementType)
+                val result = improveTextUseCase(
+                    text = textToImprove,
+                    improvementType = improvementType,
+                    onModelLoading = {
+                        // Called when the local model starts loading for the first time
+                        _uiState.update {
+                            it.copy(aiStatusMessage = "Loading AI model for first use...")
+                        }
+                    }
+                )
 
                 _uiState.update {
                     it.copy(
                         isImprovingText = false,
                         aiSuggestion = result.getOrNull(),
-                        aiError = result.exceptionOrNull()?.message
+                        aiError = result.exceptionOrNull()?.message,
+                        aiStatusMessage = null
                     )
                 }
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
                         isImprovingText = false,
-                        aiError = e.message ?: "Failed to improve text"
+                        aiError = e.message ?: "Failed to improve text",
+                        aiStatusMessage = null
                     )
                 }
             }

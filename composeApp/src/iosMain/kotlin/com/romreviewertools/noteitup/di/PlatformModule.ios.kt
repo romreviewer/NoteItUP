@@ -1,5 +1,7 @@
 package com.romreviewertools.noteitup.di
 
+import com.romreviewertools.noteitup.data.ai.LocalInferenceEngine
+import com.romreviewertools.noteitup.data.ai.ModelDownloadManager
 import com.romreviewertools.noteitup.data.analytics.AnalyticsService
 import com.romreviewertools.noteitup.data.cloud.OAuthHandler
 import com.romreviewertools.noteitup.data.database.DriverFactory
@@ -37,6 +39,10 @@ val iosModule = module {
     single { ImagePicker() }
     single { LocationService() }
     single { UrlOpener() }
+
+    // Local AI (stub for iOS)
+    single { LocalInferenceEngine() }
+    single { ModelDownloadManager() }
 
     // Analytics & Review (stub implementations for iOS)
     single { AnalyticsService() }

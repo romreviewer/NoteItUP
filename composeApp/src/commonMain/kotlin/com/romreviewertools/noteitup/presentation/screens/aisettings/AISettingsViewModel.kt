@@ -3,6 +3,11 @@ package com.romreviewertools.noteitup.presentation.screens.aisettings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.romreviewertools.noteitup.data.ai.AIService
+import com.romreviewertools.noteitup.data.ai.AvailableModels
+import com.romreviewertools.noteitup.data.ai.LocalInferenceEngine
+import com.romreviewertools.noteitup.data.ai.ModelDownloadManager
+import com.romreviewertools.noteitup.data.ai.ModelDownloadState
+import com.romreviewertools.noteitup.data.ai.ModelSource
 import com.romreviewertools.noteitup.data.analytics.AnalyticsEvent
 import com.romreviewertools.noteitup.data.analytics.AnalyticsService
 import com.romreviewertools.noteitup.data.repository.AISettingsRepository
@@ -21,7 +26,9 @@ class AISettingsViewModel(
     private val aiSettingsRepository: AISettingsRepository,
     private val aiService: AIService,
     private val urlOpener: UrlOpener,
-    private val analyticsService: AnalyticsService
+    private val analyticsService: AnalyticsService,
+    private val modelDownloadManager: ModelDownloadManager,
+    private val localInferenceEngine: LocalInferenceEngine
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AISettingsUiState())
@@ -30,12 +37,31 @@ class AISettingsViewModel(
     init {
         analyticsService.logEvent(AnalyticsEvent.ScreenViewAISettings)
         loadSettings()
+        observeModelDownloadState()
     }
 
     private fun loadSettings() {
         viewModelScope.launch {
             aiSettingsRepository.aiSettings.collect { settings ->
-                _uiState.update { it.copy(settings = settings) }
+                _uiState.update {
+                    it.copy(
+                        settings = settings,
+                        isModelLoaded = localInferenceEngine.isModelLoaded()
+                    )
+                }
+            }
+        }
+    }
+
+    private fun observeModelDownloadState() {
+        viewModelScope.launch {
+            modelDownloadManager.getDownloadState().collect { downloadState ->
+                _uiState.update {
+                    it.copy(
+                        modelDownloadState = downloadState,
+                        modelSource = modelDownloadManager.getModelSource()
+                    )
+                }
             }
         }
     }
@@ -51,6 +77,13 @@ class AISettingsViewModel(
             is AISettingsIntent.ClearApiKey -> clearApiKey()
             is AISettingsIntent.OpenApiKeyUrl -> openApiKeyUrl()
             is AISettingsIntent.DismissError -> dismissError()
+            // Local model intents
+            is AISettingsIntent.DownloadModel -> downloadModel()
+            is AISettingsIntent.CancelDownload -> cancelDownload()
+            is AISettingsIntent.DeleteModel -> deleteModel()
+            is AISettingsIntent.LoadModel -> loadModel()
+            is AISettingsIntent.UnloadModel -> unloadModel()
+            is AISettingsIntent.ImportModelFile -> importModelFile(intent.path)
         }
     }
 
@@ -68,9 +101,12 @@ class AISettingsViewModel(
         viewModelScope.launch {
             try {
                 aiSettingsRepository.updateProvider(provider)
-                // Clear model selection and API key when provider changes
+                // Clear model selection when provider changes
                 aiSettingsRepository.updateSelectedModel("")
-                aiSettingsRepository.clearApiKey()
+                // Only clear API key for cloud providers switching away
+                if (provider.requiresApiKey) {
+                    aiSettingsRepository.clearApiKey()
+                }
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = "Failed to select provider: ${e.message}") }
             }
@@ -148,7 +184,9 @@ class AISettingsViewModel(
     private fun openApiKeyUrl() {
         try {
             val provider = _uiState.value.settings.selectedProvider
-            urlOpener.openUrl(provider.apiKeyUrl)
+            if (provider.apiKeyUrl.isNotBlank()) {
+                urlOpener.openUrl(provider.apiKeyUrl)
+            }
         } catch (e: Exception) {
             _uiState.update { it.copy(error = "Failed to open URL: ${e.message}") }
         }
@@ -156,5 +194,86 @@ class AISettingsViewModel(
 
     private fun dismissError() {
         _uiState.update { it.copy(error = null, testResult = null) }
+    }
+
+    // ---- Local Model Management ----
+
+    private fun downloadModel() {
+        viewModelScope.launch {
+            try {
+                val model = AvailableModels.GEMMA_4_E2B
+                modelDownloadManager.downloadModel(model)
+            } catch (e: Exception) {
+                _uiState.update { it.copy(error = "Download failed: ${e.message}") }
+            }
+        }
+    }
+
+    private fun cancelDownload() {
+        modelDownloadManager.cancelDownload()
+    }
+
+    private fun deleteModel() {
+        viewModelScope.launch {
+            try {
+                // Unload model first if loaded
+                if (localInferenceEngine.isModelLoaded()) {
+                    localInferenceEngine.unloadModel()
+                }
+                modelDownloadManager.deleteModel()
+                _uiState.update { it.copy(isModelLoaded = false) }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(error = "Failed to delete model: ${e.message}") }
+            }
+        }
+    }
+
+    private fun loadModel() {
+        viewModelScope.launch {
+            val modelPath = modelDownloadManager.getModelPath()
+            if (modelPath == null) {
+                _uiState.update { it.copy(error = "No model file found. Download or import a model first.") }
+                return@launch
+            }
+
+            _uiState.update { it.copy(isModelLoading = true) }
+
+            try {
+                localInferenceEngine.loadModel(modelPath)
+                _uiState.update {
+                    it.copy(
+                        isModelLoaded = true,
+                        isModelLoading = false
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isModelLoading = false,
+                        error = "Failed to load model: ${e.message}"
+                    )
+                }
+            }
+        }
+    }
+
+    private fun unloadModel() {
+        localInferenceEngine.unloadModel()
+        _uiState.update { it.copy(isModelLoaded = false) }
+    }
+
+    private fun importModelFile(path: String) {
+        viewModelScope.launch {
+            try {
+                val result = modelDownloadManager.importModel(path)
+                if (result.isFailure) {
+                    _uiState.update {
+                        it.copy(error = result.exceptionOrNull()?.message ?: "Import failed")
+                    }
+                }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(error = "Import failed: ${e.message}") }
+            }
+        }
     }
 }

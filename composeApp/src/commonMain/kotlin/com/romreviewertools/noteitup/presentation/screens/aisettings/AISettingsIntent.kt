@@ -15,4 +15,12 @@ sealed interface AISettingsIntent {
     data object ClearApiKey : AISettingsIntent
     data object OpenApiKeyUrl : AISettingsIntent
     data object DismissError : AISettingsIntent
+
+    // Local AI model management
+    data object DownloadModel : AISettingsIntent
+    data object CancelDownload : AISettingsIntent
+    data object DeleteModel : AISettingsIntent
+    data object LoadModel : AISettingsIntent
+    data object UnloadModel : AISettingsIntent
+    data class ImportModelFile(val path: String) : AISettingsIntent
 }

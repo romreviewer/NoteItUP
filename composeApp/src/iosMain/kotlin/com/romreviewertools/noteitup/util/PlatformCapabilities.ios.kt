@@ -4,4 +4,6 @@ actual object PlatformCapabilities {
     actual fun hasCameraSupport(): Boolean = true
 
     actual fun hasLocationSupport(): Boolean = true
+
+    actual fun hasLocalAISupport(): Boolean = false
 }

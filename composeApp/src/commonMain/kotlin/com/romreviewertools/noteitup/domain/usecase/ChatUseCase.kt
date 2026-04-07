@@ -49,7 +49,8 @@ class ChatUseCase(
      */
     suspend fun sendMessage(
         userMessage: String,
-        conversationHistory: List<ChatMessage>
+        conversationHistory: List<ChatMessage>,
+        onModelLoading: (() -> Unit)? = null
     ): Result<String> {
         val settings = aiSettingsRepository.aiSettings.firstOrNull()
             ?: return Result.failure(Exception("AI settings not configured"))
@@ -58,13 +59,15 @@ class ChatUseCase(
             return Result.failure(Exception("AI features are disabled. Enable them in AI Settings."))
         }
 
-        if (settings.apiKey.isBlank()) {
+        // Cloud providers require API key; local provider does not
+        if (settings.selectedProvider.requiresApiKey && settings.apiKey.isBlank()) {
             return Result.failure(Exception("API key not configured. Add your API key in AI Settings."))
         }
 
         return aiService.chat(
             systemPrompt = SYSTEM_PROMPT,
-            messages = conversationHistory + ChatMessage(role = "user", content = userMessage)
+            messages = conversationHistory + ChatMessage(role = "user", content = userMessage),
+            onModelLoading = onModelLoading
         )
     }
 
@@ -83,9 +86,13 @@ class ChatUseCase(
 
     /**
      * Check if AI is properly configured.
+     * For local providers: just needs to be enabled (no API key required).
+     * For cloud providers: needs to be enabled AND have an API key.
      */
     suspend fun isConfigured(): Boolean {
         val settings = aiSettingsRepository.aiSettings.firstOrNull() ?: return false
-        return settings.enabled && settings.apiKey.isNotBlank()
+        if (!settings.enabled) return false
+        if (settings.selectedProvider.isLocal) return true
+        return settings.apiKey.isNotBlank()
     }
 }

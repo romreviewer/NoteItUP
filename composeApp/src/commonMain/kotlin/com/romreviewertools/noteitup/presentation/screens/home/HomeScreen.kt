@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -39,16 +40,20 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.romreviewertools.noteitup.data.ai.LocalInferenceEngine
+import com.romreviewertools.noteitup.presentation.components.BackHandler
 import com.romreviewertools.noteitup.presentation.components.DiaryEntryCard
 import com.romreviewertools.noteitup.presentation.components.GreetingCard
 import com.romreviewertools.noteitup.presentation.components.StatsRow
 import com.romreviewertools.noteitup.presentation.screens.settings.SettingsContent
 import com.romreviewertools.noteitup.presentation.screens.settings.SettingsViewModel
+import org.koin.compose.koinInject
 
 private enum class BottomNavTab {
     HOME, SETTINGS
@@ -71,10 +76,53 @@ fun HomeScreen(
     onSecurityClick: () -> Unit = {},
     onCloudSyncClick: () -> Unit = {},
     onAISettingsClick: () -> Unit = {},
+    onExitApp: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var selectedTab by rememberSaveable { mutableStateOf(BottomNavTab.HOME) }
+    var showExitDialog by remember { mutableStateOf(false) }
+    val localInferenceEngine = koinInject<LocalInferenceEngine>()
+
+    // Intercept back press on home screen to show exit confirmation
+    BackHandler(enabled = true) {
+        showExitDialog = true
+    }
+
+    // Exit confirmation dialog
+    if (showExitDialog) {
+        AlertDialog(
+            onDismissRequest = { showExitDialog = false },
+            title = { Text("Exit NoteItUP?") },
+            text = {
+                Text(
+                    if (localInferenceEngine.isModelLoaded())
+                        "The AI model will be unloaded to free up memory."
+                    else
+                        "Are you sure you want to exit?"
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showExitDialog = false
+                        // Unload AI model to free RAM
+                        if (localInferenceEngine.isModelLoaded()) {
+                            localInferenceEngine.unloadModel()
+                        }
+                        onExitApp()
+                    }
+                ) {
+                    Text("Exit")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showExitDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 
     Scaffold(
         topBar = {

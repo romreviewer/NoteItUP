@@ -1,6 +1,7 @@
 package com.romreviewertools.noteitup.presentation.screens.aisettings
 
-import com.romreviewertools.noteitup.domain.model.AIProvider
+import com.romreviewertools.noteitup.data.ai.ModelDownloadState
+import com.romreviewertools.noteitup.data.ai.ModelSource
 import com.romreviewertools.noteitup.domain.model.AISettings
 
 /**
@@ -11,7 +12,12 @@ data class AISettingsUiState(
     val isLoading: Boolean = false,
     val isTestingConnection: Boolean = false,
     val testResult: TestResult? = null,
-    val error: String? = null
+    val error: String? = null,
+    // Local AI model state
+    val modelDownloadState: ModelDownloadState = ModelDownloadState.NotDownloaded,
+    val isModelLoaded: Boolean = false,
+    val isModelLoading: Boolean = false,
+    val modelSource: ModelSource = ModelSource.NONE
 )
 
 /**

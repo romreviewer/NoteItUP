@@ -368,6 +368,7 @@ fun EditorScreen(
                                     viewModel.processIntent(EditorIntent.ImproveText(improvementType))
                                 },
                                 isLoading = uiState.isImprovingText,
+                                statusMessage = uiState.aiStatusMessage,
                                 onBrainstormClick = onNavigateToBrainstorm,
                                 modifier = Modifier.fillMaxWidth()
                             )
