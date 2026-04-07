@@ -200,6 +200,7 @@ Make it yours:
 - **Accent Colors**: Multiple color options
 - **Font Sizes**: Small, Medium, Large, Extra Large
 - **Daily Reminders**: Configurable notification time
+- **Branded Splash Screen**: Purple branded launch screen (Android 12+ native API with backward compat)
 
 ---
 
@@ -236,6 +237,7 @@ Make it yours:
 | **Richeditor-compose** | WYSIWYG editor |
 | **Firebase Analytics** | Usage analytics (Android) |
 | **Play In-App Review** | Rating prompts (Android) |
+| **AndroidX SplashScreen** | Branded launch screen (Android) |
 
 ---
 
