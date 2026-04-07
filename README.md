@@ -6,7 +6,7 @@
 
 <p align="center">
   <strong>AI-Powered Personal Diary & Journal</strong><br>
-  Privacy-first journaling with intelligent writing assistance
+  Privacy-first journaling with on-device Gemma 4 AI -- your thoughts never leave your phone
 </p>
 
 <p align="center">
@@ -19,6 +19,7 @@
 </p>
 
 <p align="center">
+  <img src="https://img.shields.io/badge/Gemma_4-On--Device_AI-8E24AA?logo=google&logoColor=white" alt="Gemma 4 On-Device"/>
   <img src="https://img.shields.io/badge/Kotlin-Multiplatform-7F52FF?logo=kotlin&logoColor=white" alt="Kotlin Multiplatform"/>
   <img src="https://img.shields.io/badge/Compose-Multiplatform-4285F4?logo=jetpack-compose&logoColor=white" alt="Compose Multiplatform"/>
   <img src="https://img.shields.io/badge/License-MIT-blue" alt="MIT License"/>
@@ -32,11 +33,11 @@
 NoteItUP is a modern, open-source journaling application that combines the simplicity of traditional diary writing with the power of AI assistance. Built with **Kotlin Multiplatform** and **Compose Multiplatform**, it runs natively on Android, iOS, and Desktop while keeping your data secure and private.
 
 **Key Highlights:**
-- 🧠 **On-Device AI** - Gemma 4 runs entirely on your phone. No internet needed, no data leaves your device
-- 🤖 **AI-Powered** - 8 writing improvement types + Brainstorm chat mode (local or cloud)
-- 🔐 **Privacy-First** - All data stored locally, encrypted backups
-- 📱 **Cross-Platform** - One codebase for Android, iOS & Desktop
-- 🌟 **100% Open Source** - Transparent, community-driven development
+- 🧠 **On-Device AI** - Google Gemma 4 runs entirely on your phone via LiteRT-LM. No internet, no cloud, no data shared
+- 🤖 **8 AI Writing Tools** - Grammar, clarity, tone, journaling, summarization + brainstorm chat
+- 🔐 **Privacy-First** - Local-first storage, encrypted cloud backups, PIN & biometric lock
+- 📱 **Cross-Platform** - One Kotlin codebase for Android, iOS & Desktop
+- 🌟 **100% Open Source** - MIT licensed, community-driven
 
 ## Screenshots
 
@@ -47,28 +48,115 @@ NoteItUP is a modern, open-source journaling application that combines the simpl
   <img src="screenshots/settings_screen.png" width="200" alt="Settings Screen"/>
 </p>
 
+---
+
+## On-Device AI with Gemma 4
+
+NoteItUP integrates Google's **Gemma 4 E2B** (2 billion parameter) model for fully private, offline AI writing assistance. Your diary entries never leave your device for AI processing.
+
+### Why On-Device?
+
+A diary is deeply personal. Cloud-based AI means sending your private thoughts to external servers. With on-device inference, the AI model runs directly on your phone's hardware -- no network requests, no third-party access, no data collection. Your thoughts stay yours.
+
+### How It Works
+
+```
+You write a diary entry
+    |
+    v
+Tap an AI chip (e.g. "Fix Grammar")
+    |
+    v
+Gemma 4 processes your text locally
+  - Android: GPU acceleration via LiteRT-LM
+  - Desktop: CPU inference via LiteRT-LM
+  - No network call. No API key. No cloud.
+    |
+    v
+Improved text appears in a suggestion dialog
+  - Accept to replace, or dismiss to keep original
+```
+
+### Technical Details
+
+| Component | Detail |
+|-----------|--------|
+| **Model** | Gemma 4 E2B -- 2 billion parameters, instruction-tuned |
+| **Format** | `.litertlm` (optimized for edge inference) |
+| **Runtime** | [LiteRT-LM](https://github.com/google-ai-edge/LiteRT-LM) by Google AI Edge |
+| **Android Backend** | GPU (primary) with automatic CPU fallback |
+| **Desktop Backend** | CPU |
+| **Model Size** | ~1.6 GB download (one-time) |
+| **RAM Required** | 8 GB+ system RAM |
+| **Load Time** | ~5-10 seconds on first use per session |
+| **Inference Time** | ~1-2 seconds per request (after loaded) |
+| **Download** | Android system DownloadManager (background, resumable) |
+
+### Lazy Loading -- No Wasted RAM
+
+The model is **not** loaded at app startup. It loads into memory only when you first use an AI feature in a session:
+
+1. **First AI use**: Model loads from disk (~5-10s). Inline status shows "Loading AI model for first use..."
+2. **Subsequent uses**: Model is already in memory. Inference is near-instant (~1-2s).
+3. **On app exit**: Exit dialog offers to unload the model and free RAM.
+
+This means users who don't use AI features in a session pay zero RAM cost.
+
+### Model Acquisition -- Two Options
+
+| Method | Flow |
+|--------|------|
+| **Download in-app** | Tap "Download" in AI Settings. Android DownloadManager handles it in the background with a progress notification. Resumable, cancellable. |
+| **Import existing file** | Tap "Select File" in AI Settings. Pick any `.litertlm` file from your device (e.g. from Google AI Edge Gallery or a previous install). |
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  AISettingsScreen                                           │
+│  - Provider selector (Local Gemma / Cloud providers)        │
+│  - Model download/import with progress                      │
+│  - Load/unload/test/delete model                            │
+└──────────────────────────┬──────────────────────────────────┘
+                           │
+┌──────────────────────────▼──────────────────────────────────┐
+│  AIService                                                  │
+│  - Routes to local or cloud based on provider               │
+│  - Lazy auto-loads model on first use if downloaded          │
+│  - onModelLoading callback for UI status messages            │
+└──────────────────────────┬──────────────────────────────────┘
+                           │
+           ┌───────────────┴───────────────┐
+           │                               │
+┌──────────▼──────────┐     ┌──────────────▼──────────────────┐
+│  LocalInferenceEngine│     │  Cloud HTTP (Ktor)              │
+│  (expect/actual)     │     │  OpenAI / Claude / Gemini / etc │
+│                      │     └─────────────────────────────────┘
+│  Android: LiteRT-LM  │
+│    GPU → CPU fallback │
+│  JVM: LiteRT-LM CPU  │
+│  iOS: Stub            │
+└───────────┬──────────┘
+            │
+┌───────────▼──────────┐
+│  ModelDownloadManager │
+│  (expect/actual)      │
+│                       │
+│  Android: System      │
+│    DownloadManager     │
+│  JVM: Ktor + Job      │
+│  iOS: Stub            │
+└───────────────────────┘
+```
+
+---
+
 ## Features
 
-### 🤖 AI Writing Assistant
+### 🤖 AI Writing Tools
 
-Transform your journaling with intelligent AI assistance -- running **entirely on your device** or via cloud APIs.
+8 improvement types available in the editor toolbar, powered by local Gemma 4 or cloud providers:
 
-#### 🧠 On-Device AI (NEW - Gemma 4)
-
-**Your diary entries never leave your phone for AI processing.**
-
-| Feature | Detail |
-|---------|--------|
-| **Model** | Google Gemma 4 E2B (2B parameters) |
-| **Engine** | LiteRT-LM with GPU acceleration |
-| **Privacy** | 100% on-device, works completely offline |
-| **Setup** | One-time ~1.6GB download, auto-loads on first use |
-| **Requirement** | Android/Desktop, 8GB+ RAM |
-| **Import** | Already have the model? Select the file directly |
-
-> No API key needed. No internet needed. No data shared. Just private AI.
-
-#### Text Improvement (8 Types)
 | Type | Description |
 |------|-------------|
 | 📝 **Improve for Journal** | Optimize entries for personal reflection |
@@ -80,15 +168,15 @@ Transform your journaling with intelligent AI assistance -- running **entirely o
 | 😊 **Casual Tone** | Make it conversational and relaxed |
 | 📋 **Summarize** | Create concise summaries |
 
-#### 💬 Brainstorm Mode
+### 💬 Brainstorm Mode
 - Interactive AI chat for creative writing
-- Get writing prompts and ideas
+- Journaling prompts and idea generation
 - Overcome writer's block
-- Conversational interface with persistent message history
+- Persistent conversation history across sessions
 
-#### Cloud AI Providers (BYOK)
+### Cloud AI Providers (BYOK)
 
-Prefer cloud models? Bring your own API key:
+Prefer cloud models? Bring your own API key. 6 providers supported:
 
 | Provider | Free Tier | Models |
 |----------|-----------|--------|
@@ -99,7 +187,7 @@ Prefer cloud models? Bring your own API key:
 | **OpenAI** | ❌ Paid | GPT-4o, GPT-4o-mini |
 | **Anthropic** | ❌ Paid | Claude 3.5 Sonnet |
 
-> **Privacy Note:** API keys are stored securely on-device. Journal content is only sent to your chosen cloud provider when you explicitly request improvements. For maximum privacy, use the local Gemma 4 option.
+> Cloud providers are fully optional. The default is local Gemma 4 -- no account or API key required.
 
 ---
 
@@ -297,25 +385,33 @@ open iosApp/iosApp.xcodeproj
 
 ## AI Setup Guide
 
-### Recommended: Local AI (Gemma 4) -- No API Key Needed
+### Option 1: Local AI (Gemma 4) -- Default, No API Key
 
-The easiest and most private option. Everything runs on your device.
+The default and most private option. Zero setup if you just want it to work.
 
-1. Open any diary entry and tap an AI improvement chip
-2. The model downloads automatically (~1.6 GB, one-time)
-3. AI loads on first use -- just wait ~5-10 seconds
-4. Done! All future AI features work instantly, even offline
+**Automatic flow:**
+1. Open any diary entry
+2. Tap an AI chip in the toolbar (e.g. "Fix Grammar")
+3. First time: model downloads (~1.6 GB) via system download notification
+4. Model loads into memory (~5-10 seconds, shows "Loading AI model...")
+5. Improved text appears. Done. Works offline from now on.
 
-**Already have the model file?** Go to **Settings -> AI Settings -> Select File** to import it.
+**Manual setup (optional):**
+1. Go to **Settings -> AI Settings**
+2. Provider is already set to "Local (Gemma 4)"
+3. Tap **Download Model** or **Select File** (if you already have `gemma-4-E2B-it.litertlm`)
+4. Once downloaded, tap **Load Model** -> **Test Model** to verify
 
-**Requirements:** Android or Desktop, 8GB+ RAM
+**Import from AI Edge Gallery:** If you use Google's [AI Edge Gallery](https://github.com/google-ai-edge/gallery) app and already have the Gemma 4 E2B model downloaded, tap "Select File" and pick the `.litertlm` file. No re-download needed.
 
-### Alternative: Cloud AI Providers
+**Requirements:** Android or Desktop, 8GB+ RAM, ~1.6 GB free storage
 
-If you prefer cloud-based models, bring your own API key:
+### Option 2: Cloud AI Providers (BYOK)
+
+If you prefer cloud-based models or need higher quality output:
 
 1. Go to **Settings -> AI Settings**
-2. Select a cloud provider
+2. Select a cloud provider from the dropdown
 3. Enter your API key
 4. Tap **Test Connection** to verify
 
@@ -336,20 +432,29 @@ The app follows **Clean Architecture** with **MVI** pattern:
 
 ```
 composeApp/src/
-├── commonMain/          # Shared code (95%+)
-│   ├── data/            # Repositories, database, APIs
-│   ├── domain/          # Models, use cases
-│   └── presentation/    # Screens, ViewModels, UI
-├── androidMain/         # Android-specific
-├── iosMain/             # iOS-specific
-└── jvmMain/             # Desktop-specific
+├── commonMain/              # Shared code (95%+)
+│   ├── data/
+│   │   ├── ai/             # AIService, LocalInferenceEngine (expect), ModelDownloadManager (expect)
+│   │   ├── database/       # SQLDelight
+│   │   ├── repository/     # DiaryRepo, AISettingsRepo, SecurityRepo
+│   │   └── cloud/          # Google Drive, Dropbox sync
+│   ├── domain/
+│   │   ├── model/          # DiaryEntry, AIProvider, Mood, Tag
+│   │   └── usecase/        # ImproveTextUseCase, ChatUseCase, CRUD use cases
+│   └── presentation/
+│       ├── screens/        # Home, Editor, AISettings, Brainstorm, etc.
+│       └── components/     # AIToolbar, DiaryEntryCard, FilePicker (expect)
+├── androidMain/             # LiteRT-LM GPU, DownloadManager, BiometricPrompt
+├── iosMain/                 # LocalAuthentication, stubs for local AI
+└── jvmMain/                 # LiteRT-LM CPU, JFileChooser, JVM database driver
 ```
 
 **Key Patterns:**
-- `expect/actual` for platform-specific code
-- Unidirectional data flow with StateFlow
+- `expect/actual` for platform-specific code (AI engine, download manager, biometrics, file picker)
+- Unidirectional data flow with MVI + StateFlow
 - Repository pattern for data access
 - Dependency injection with Koin
+- Lazy model loading with `onModelLoading` callbacks for UI feedback
 
 ---
 
