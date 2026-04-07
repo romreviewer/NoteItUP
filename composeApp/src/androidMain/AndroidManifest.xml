@@ -16,10 +16,6 @@
     <!-- Camera permission -->
     <uses-permission android:name="android.permission.CAMERA" />
 
-    <!-- Foreground service for model download -->
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
-
     <!-- Storage permissions for images (Android 12 and below) -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
@@ -72,12 +68,6 @@
                 <data android:scheme="${dropboxScheme}" />
             </intent-filter>
         </activity>
-
-        <!-- Foreground service for AI model download -->
-        <service
-            android:name=".data.ai.ModelDownloadService"
-            android:exported="false"
-            android:foregroundServiceType="dataSync" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

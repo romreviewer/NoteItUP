@@ -1161,11 +1161,11 @@ Users can choose from multiple popular AI APIs (bring your own API key):
 
 ---
 
-### Phase 8.5 - Local AI with Gemma 4 (On-Device Inference)
+### Phase 8.5 - Local AI with Gemma 4 (On-Device Inference) ✅ COMPLETED
 
 **Private, offline AI-powered writing assistance using Google's Gemma 4 model running entirely on-device via LiteRT-LM.**
 
-**Status:** Planned
+**Status:** Completed
 
 #### Overview
 
@@ -1552,12 +1552,17 @@ suspend fun isConfigured(): Boolean {
 }
 ```
 
-#### Model Download: Android Foreground Service
+#### Model Download: Android System DownloadManager
 
-The ~1.6GB model download uses an Android **ForegroundService** to ensure the download:
-- Survives screen navigation and app backgrounding
-- Shows a persistent notification with progress and cancel action
-- Can be cancelled reliably from both the notification and the UI
+The ~1.6GB model download uses Android's built-in **`DownloadManager`** system service.
+No foreground service permissions needed -- zero Play Store compliance issues.
+
+**Why DownloadManager?**
+- No `FOREGROUND_SERVICE` permission required (Play Store rejects misuse of service types)
+- System handles notification with progress bar and cancel automatically
+- Supports resume/retry on network failure
+- Survives app process kill
+- Google-recommended approach for large file downloads
 
 **Why not Play Asset Delivery?**
 - Model file would need to be in the AAB (2GB+ build artifacts, slow builds)
@@ -1570,62 +1575,33 @@ The ~1.6GB model download uses an Android **ForegroundService** to ensure the do
 User taps "Download"
     |
     v
-ModelDownloadManager.downloadModel()
+ModelDownloadManager.downloadModel():
+  - Creates DownloadManager.Request with HuggingFace URL
+  - Sets destination: context.getExternalFilesDir("models/...")
+  - Enqueues request --> system DownloadManager handles HTTP download
+  - Registers BroadcastReceiver for ACTION_DOWNLOAD_COMPLETE
+  - Polls DownloadManager.Query every 500ms for progress
+  - Updates _downloadState StateFlow so UI shows progress bar
     |
     v
-context.startForegroundService(intent) --> ModelDownloadService starts
+System shows download notification automatically
     |
     v
-ModelDownloadService.onStartCommand():
-  - Creates notification channel "model_download" (IMPORTANCE_LOW)
-  - Shows foreground notification with progress bar + cancel action
-  - Gets ModelDownloadManager from Koin (shared singleton)
-  - Downloads via Ktor HttpClient from HuggingFace
-  - Updates ModelDownloadManager._downloadState (shared StateFlow)
-  - UI observes the same StateFlow --> progress bar updates
-    |
-    v
-On complete: state = Downloaded, stopForeground(), stopSelf()
-On cancel:   state = NotDownloaded, delete temp file, stopSelf()
-On error:    state = Error, stopSelf()
+On complete: BroadcastReceiver fires --> state = Downloaded
+On cancel:   downloadManager.remove(downloadId) --> state = NotDownloaded
+On error:    BroadcastReceiver detects failure --> state = Error
 ```
 
-**Notification UX:**
-```
-+------------------------------------------+
-| NoteItUP                                 |
-| Downloading Gemma 4 E2B... 45%           |
-| [========>                    ]           |
-|                              [Cancel]    |
-+------------------------------------------+
-```
+**JVM (Desktop):** Uses a cancellation `Job()` with `withContext(Dispatchers.IO)` for downloads.
 
-**Components:**
-
-| Component | File | Description |
-|-----------|------|-------------|
-| `ModelDownloadService` | `androidMain/.../data/ai/ModelDownloadService.kt` | Android ForegroundService for background model download |
-
-**JVM (Desktop):** Uses its own `CoroutineScope(SupervisorJob())` for cancellable downloads (no service needed).
-
-**Android Manifest additions:**
-```xml
-<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-<uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
-
-<service
-    android:name=".data.ai.ModelDownloadService"
-    android:exported="false"
-    android:foregroundServiceType="dataSync" />
-```
+**No special permissions needed.** The existing `INTERNET` permission is sufficient.
 
 #### Components Summary
 
 | Component | File | Description |
 |-----------|------|-------------|
 | `LocalInferenceEngine` | `data/ai/LocalInferenceEngine.kt` | expect/actual for on-device LLM inference via LiteRT-LM |
-| `ModelDownloadManager` | `data/ai/ModelDownloadManager.kt` | expect/actual for model download, import, and lifecycle |
-| `ModelDownloadService` | `androidMain data/ai/ModelDownloadService.kt` | Android ForegroundService for background model download |
+| `ModelDownloadManager` | `data/ai/ModelDownloadManager.kt` | expect/actual for model download (Android: system DownloadManager), import, and lifecycle |
 | `ModelInfo` | `data/ai/ModelDownloadManager.kt` | Data class describing available models |
 | `ModelDownloadState` | `data/ai/ModelDownloadManager.kt` | Sealed class for download progress tracking |
 | `AIProvider.LOCAL_GEMMA` | `domain/model/AIProvider.kt` | New enum entry for local inference provider |
@@ -1639,8 +1615,7 @@ On error:    state = Error, stopSelf()
 | `jvmMain/.../data/ai/LocalInferenceEngine.jvm.kt` | LiteRT-LM CPU implementation |
 | `iosMain/.../data/ai/LocalInferenceEngine.ios.kt` | Stub implementation |
 | `commonMain/.../data/ai/ModelDownloadManager.kt` | Expect class for model lifecycle |
-| `androidMain/.../data/ai/ModelDownloadManager.android.kt` | Android service-based download + file picker import |
-| `androidMain/.../data/ai/ModelDownloadService.kt` | Android ForegroundService for model download |
+| `androidMain/.../data/ai/ModelDownloadManager.android.kt` | Android DownloadManager-based download + file picker import |
 | `jvmMain/.../data/ai/ModelDownloadManager.jvm.kt` | JVM download with own CoroutineScope |
 | `iosMain/.../data/ai/ModelDownloadManager.ios.kt` | Stub |
 
@@ -1650,7 +1625,7 @@ On error:    state = Error, stopSelf()
 |------|---------|
 | `gradle/libs.versions.toml` | Add litertlm version + library entries |
 | `composeApp/build.gradle.kts` | Add platform-specific LiteRT-LM dependencies |
-| `AndroidManifest.xml` | Add GPU native libs + foreground service permission + service declaration |
+| `AndroidManifest.xml` | Add GPU native library declarations for LiteRT-LM |
 | `domain/model/AIProvider.kt` | Add `LOCAL_GEMMA` entry + `isLocal`/`requiresApiKey` properties |
 | `data/ai/AIService.kt` | Add local inference routing, accept `LocalInferenceEngine` |
 | `data/repository/AISettingsRepository.kt` | Skip API key validation for local provider |
@@ -1715,6 +1690,35 @@ engine.close()
 - Diary content never leaves the device for AI operations
 - Model runs completely offline after download
 - Aligns with NoteItUP's "Privacy First" design philosophy
+
+#### Lazy Model Loading (Implemented)
+
+The model is **not** loaded at app startup (to save RAM). Instead it loads automatically on first AI use:
+
+1. User taps an AI improvement chip or sends a brainstorm message
+2. `AIService.makeLocalRequest()` detects model not in memory
+3. Checks `modelDownloadManager.getModelPath()` -- is the model downloaded?
+   - **Downloaded but not loaded**: auto-loads the model, shows "Loading AI model for first use..." inline in the AI toolbar
+   - **Not downloaded at all**: shows error "AI model not downloaded. Go to AI Settings to download Gemma 4." with Settings action
+4. After first load (~5-10s), model stays in memory for the session. Subsequent AI uses are instant (~1-2s).
+5. On app exit, the model is unloaded to free RAM via exit confirmation dialog.
+
+**Components involved:**
+- `AIService.makeLocalRequest()` -- lazy auto-load with `onModelLoading` callback
+- `ImproveTextUseCase` / `ChatUseCase` -- pass `onModelLoading` callback through
+- `EditorViewModel` / `BrainstormViewModel` -- set `aiStatusMessage` / `statusMessage` on callback
+- `AIToolbar` -- shows status message inline alongside spinner (visible even with keyboard open)
+- `EditorScreen` / `BrainstormScreen` -- display status messages
+
+#### Exit Confirmation Dialog (Implemented)
+
+When the user presses the back button on the Home screen:
+- An `AlertDialog` asks "Exit NoteItUP?"
+- If the AI model is loaded, the dialog text says: "The AI model will be unloaded to free up memory."
+- **Exit**: unloads the model via `localInferenceEngine.unloadModel()`, then exits the app
+- **Cancel**: dismisses the dialog, stays in the app
+
+Uses the project's KMP `BackHandler` expect/actual pattern (Android: `androidx.activity.compose.BackHandler`, iOS/JVM: no-op).
 
 ---
 
@@ -2016,7 +2020,7 @@ Desktop version is **fully functional** for journaling with the following notes:
 
 ---
 
-*This document reflects the current implementation as of Phase 9 (User Engagement & Analytics). Phases 1-6 are fully implemented. Phase 6 Cloud Sync now uses native Google Identity Services (AuthorizationClient) on Android for Google Drive OAuth. Phase 7 (Day One and Joplin import) is functional on all platforms including iOS. Phase 7.5 (WYSIWYG Markdown Editor), Phase 8 (API-Based AI Integration), and Phase 9 (Analytics & In-App Review) are completed. Phase 8.5 (Local AI with Gemma 4 via LiteRT-LM) is planned for Android and JVM platforms. Brainstorm chat history is now persistent via SQLDelight. Desktop multi-window support has been implemented with menu bar integration.*
+*This document reflects the current implementation through Phase 9. Phases 1-9 are fully implemented. Phase 8.5 (Local AI with Gemma 4 via LiteRT-LM) is completed for Android and JVM platforms (iOS stub). Key highlights: on-device inference with GPU/CPU fallback, system DownloadManager for model download (no foreground service permissions), lazy model loading on first AI use, file picker import for existing models, exit dialog with model unload. All cloud AI providers (Groq, OpenAI, Claude, Gemini, OpenRouter, Together AI) remain available alongside the new local option.*
 
 ---
 
