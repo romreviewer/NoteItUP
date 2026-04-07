@@ -163,7 +163,7 @@ android {
         applicationId = "com.romreviewertools.noteitup"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 12
+        versionCode = 13
         versionName = "1.6.0"
 
         // API Keys from local.properties (gitignored)
