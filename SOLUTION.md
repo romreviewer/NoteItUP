@@ -231,6 +231,7 @@ sealed interface HomeIntent {
 | DateTime | kotlinx-datetime | 0.7.1 |
 | Serialization | kotlinx-serialization | 1.7.3 |
 | UUID | benasher44/uuid | 0.8.4 |
+| Splash Screen | androidx.core:core-splashscreen | 1.0.1 |
 
 ---
 
@@ -498,6 +499,7 @@ kotlinx-serialization = "1.7.3"
 navigation-compose = "2.9.1"
 uuid = "0.8.4"
 commons-compress = "1.25.0"
+androidx-splashscreen = "1.0.1"
 ```
 
 ### Platform-Specific
@@ -530,6 +532,7 @@ commons-compress = "1.25.0"
 - [x] Settings integrated inline with bottom nav
 - [x] Custom app icon
 - [x] FileProvider for secure file sharing (Android)
+- [x] Android 12+ Splash Screen (eliminates white screen on cold start)
 
 ### Phase 5 - Security (Completed)
 - [x] PIN lock with 4-6 digit support
@@ -725,6 +728,41 @@ data class ImportResult(
 **Current Limitations:**
 - Testing with real-world export files still pending
 - Large import performance optimization (1000+ entries) not yet done
+
+---
+
+### Android 12+ Splash Screen (Completed)
+
+**Eliminates white screen flash on cold start using the AndroidX SplashScreen compat library.**
+
+**Problem:** On app launch, a white screen was visible before Compose content rendered, causing a poor first impression.
+
+**Solution:** Implemented the `androidx.core:core-splashscreen` library which provides a consistent branded splash screen across all Android versions (API 24+).
+
+**Implementation:**
+
+| Component | File | Change |
+|-----------|------|--------|
+| Dependency | `libs.versions.toml` | Added `androidx-splashscreen = "1.0.1"` |
+| Build config | `build.gradle.kts` | Added `implementation(libs.androidx.splashscreen)` |
+| Theme | `res/values/themes.xml` | New splash theme with purple background (#582486) and app icon |
+| Manifest | `AndroidManifest.xml` | Changed app theme to `@style/Theme.NoteItUP.Splash` |
+| Activity | `MainActivity.kt` | Added `installSplashScreen()` before `super.onCreate()` |
+
+**How it works:**
+- **Android 12+ (API 31+):** Delegates to the native system splash screen API, showing the adaptive icon with purple background
+- **Android 11 and below:** The compat library recreates the same splash screen behavior using a themed window background
+- `installSplashScreen()` must be called before `super.onCreate()` to properly transition from the splash theme to app content
+- `postSplashScreenTheme` restores the original `Theme.Material.Light.NoActionBar` after splash completes
+
+**Splash Theme Configuration:**
+```xml
+<style name="Theme.NoteItUP.Splash" parent="Theme.SplashScreen">
+    <item name="windowSplashScreenBackground">#582486</item>
+    <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_foreground</item>
+    <item name="postSplashScreenTheme">@android:style/Theme.Material.Light.NoActionBar</item>
+</style>
+```
 
 ---
 
@@ -1123,6 +1161,563 @@ Users can choose from multiple popular AI APIs (bring your own API key):
 
 ---
 
+### Phase 8.5 - Local AI with Gemma 4 (On-Device Inference)
+
+**Private, offline AI-powered writing assistance using Google's Gemma 4 model running entirely on-device via LiteRT-LM.**
+
+**Status:** Planned
+
+#### Overview
+
+Adds a new `LOCAL_GEMMA` AI provider alongside existing cloud-based BYOK providers. Users can download and run Gemma 4 E2B (2 billion parameters) directly on their device -- no internet required, no API key needed, complete privacy for diary content.
+
+**Key Value:** Personal diary entries never leave the device for AI processing.
+
+#### Recommended Model
+- **Model:** Gemma 4 E2B (2B parameters)
+- **Format:** `.litertlm` (LiteRT-LM optimized)
+- **Size:** ~1.6 GB download
+- **RAM:** Requires 8GB+ system RAM
+- **Why:** Optimized for mobile edge inference, good text-refinement quality at small size
+
+#### Inference Library: LiteRT-LM
+
+**Why LiteRT-LM over MediaPipe GenAI:**
+- Newer, actively maintained by Google AI Edge team
+- Stable Kotlin API with Gradle dependencies for both Android and JVM
+- GPU and NPU hardware acceleration
+- Streaming responses via Kotlin Flow
+- Powers the official Google AI Edge Gallery app
+- Supports Gemma 4 natively
+
+**Dependencies:**
+```gradle
+// Android
+implementation("com.google.ai.edge.litertlm:litertlm-android:0.10.0")
+
+// JVM (Desktop)
+implementation("com.google.ai.edge.litertlm:litertlm-jvm:0.10.0")
+```
+
+**Android Manifest (GPU support):**
+```xml
+<application>
+    <uses-native-library android:name="libOpenCL.so" android:required="false"/>
+    <uses-native-library android:name="libvndksupport.so" android:required="false"/>
+</application>
+```
+
+#### Platform Support
+
+| Platform | Status | Backend | Notes |
+|----------|--------|---------|-------|
+| Android | Planned | GPU (primary), CPU (fallback) | Full support, primary target |
+| JVM (Desktop) | Planned | CPU | Full support |
+| iOS | Stub | N/A | LiteRT-LM Swift API not yet stable ("Coming Soon") |
+
+#### Architecture
+
+```
+User selects "Local (Gemma 4)" in AI Settings
+    |
+    v
+AISettingsScreen shows Model Management UI (not API key)
+    |
+    v
+Model Acquisition (two options):
+  a) In-app download from HuggingFace --> app storage
+  b) Select existing .litertlm file via file picker
+    |
+    v
+AIService.makeRequest() detects LOCAL_GEMMA --> delegates to LocalInferenceEngine
+    |
+    v
+LocalInferenceEngine (expect/actual):
+  - Android: LiteRT-LM Engine with GPU backend
+  - JVM: LiteRT-LM Engine with CPU backend
+  - iOS: Stub (throws "not available")
+    |
+    v
+Response --> same AIToolbar / AISuggestionDialog UX as cloud providers
+```
+
+#### Implementation Plan
+
+**Step 1: Dependencies & Build Configuration**
+
+Files to modify:
+- `gradle/libs.versions.toml` -- Add `litertlm` version and library entries
+- `composeApp/build.gradle.kts` -- Add platform-specific LiteRT-LM dependencies
+- `composeApp/src/androidMain/AndroidManifest.xml` -- Add GPU native library declarations
+
+```toml
+# libs.versions.toml
+[versions]
+litertlm = "0.10.0"
+
+[libraries]
+litertlm-android = { module = "com.google.ai.edge.litertlm:litertlm-android", version.ref = "litertlm" }
+litertlm-jvm = { module = "com.google.ai.edge.litertlm:litertlm-jvm", version.ref = "litertlm" }
+```
+
+**Step 2: Update AIProvider Enum**
+
+File: `domain/model/AIProvider.kt`
+
+Add `LOCAL_GEMMA` entry with helper properties:
+
+```kotlin
+LOCAL_GEMMA(
+    displayName = "Local (Gemma 4)",
+    baseUrl = "",  // Not used for local inference
+    hasFreeTier = true,
+    description = "Gemma 4 E2B - Private, on-device AI. No internet needed. Requires 8GB+ RAM.",
+    apiKeyUrl = ""  // Not used
+)
+
+// Helper properties
+val isLocal: Boolean get() = this == LOCAL_GEMMA
+val requiresApiKey: Boolean get() = !isLocal
+```
+
+**Step 3: Add `hasLocalAISupport()` to PlatformCapabilities**
+
+Files (expect/actual pattern):
+- `commonMain/.../util/PlatformCapabilities.kt` -- Add `fun hasLocalAISupport(): Boolean`
+- `androidMain` -- Returns `true`
+- `jvmMain` -- Returns `true`
+- `iosMain` -- Returns `false`
+
+Used to hide the `LOCAL_GEMMA` provider on platforms that don't support it.
+
+**Step 4: Create LocalInferenceEngine (expect/actual)**
+
+New files:
+| File | Description |
+|------|-------------|
+| `commonMain/.../data/ai/LocalInferenceEngine.kt` | Expect class definition |
+| `androidMain/.../data/ai/LocalInferenceEngine.android.kt` | LiteRT-LM with GPU backend |
+| `jvmMain/.../data/ai/LocalInferenceEngine.jvm.kt` | LiteRT-LM with CPU backend |
+| `iosMain/.../data/ai/LocalInferenceEngine.ios.kt` | Stub (throws UnsupportedOperationException) |
+
+Common interface:
+```kotlin
+expect class LocalInferenceEngine {
+    suspend fun loadModel(modelPath: String)
+    fun unloadModel()
+    fun isModelLoaded(): Boolean
+    suspend fun generateResponse(
+        systemPrompt: String,
+        userMessage: String,
+        temperature: Float = 0.7f,
+        maxTokens: Int = 1024
+    ): String
+    suspend fun generateResponseStream(
+        systemPrompt: String,
+        userMessage: String,
+        temperature: Float = 0.7f,
+        maxTokens: Int = 1024
+    ): Flow<String>
+}
+```
+
+Android actual (key details):
+```kotlin
+actual class LocalInferenceEngine(private val context: Context) {
+    private var engine: Engine? = null
+
+    actual suspend fun loadModel(modelPath: String) = withContext(Dispatchers.IO) {
+        val config = EngineConfig(
+            modelPath = modelPath,
+            backend = Backend.GPU(),  // GPU acceleration
+            cacheDir = context.cacheDir.path
+        )
+        engine = Engine(config).also { it.initialize() }
+    }
+
+    actual suspend fun generateResponse(...): String = withContext(Dispatchers.IO) {
+        val conv = engine!!.createConversation(
+            ConversationConfig(
+                systemInstruction = Contents.of(systemPrompt),
+                samplerConfig = SamplerConfig(temperature = temperature)
+            )
+        )
+        conv.use { it.sendMessage(userMessage).text }
+    }
+
+    actual suspend fun generateResponseStream(...): Flow<String> = flow {
+        val conv = engine!!.createConversation(...)
+        conv.sendMessageAsync(userMessage).collect { emit(it.text) }
+    }.flowOn(Dispatchers.IO)
+}
+```
+
+JVM actual: Same structure but `Backend.CPU()` instead of GPU.
+
+**Step 5: Create ModelDownloadManager (expect/actual)**
+
+New files:
+| File | Description |
+|------|-------------|
+| `commonMain/.../data/ai/ModelDownloadManager.kt` | Expect class + ModelInfo, ModelDownloadState |
+| `androidMain/.../data/ai/ModelDownloadManager.android.kt` | HuggingFace download + file picker import |
+| `jvmMain/.../data/ai/ModelDownloadManager.jvm.kt` | HuggingFace download + JFileChooser import |
+| `iosMain/.../data/ai/ModelDownloadManager.ios.kt` | Stub |
+
+Common types:
+```kotlin
+data class ModelInfo(
+    val name: String,           // "Gemma 4 E2B"
+    val fileName: String,       // "gemma-4-E2B-it.litertlm"
+    val sizeBytes: Long,        // ~1.6GB
+    val downloadUrl: String,    // HuggingFace URL
+    val description: String
+)
+
+sealed class ModelDownloadState {
+    data object NotDownloaded : ModelDownloadState()
+    data class Downloading(val progress: Float) : ModelDownloadState()
+    data object Downloaded : ModelDownloadState()
+    data class Error(val message: String) : ModelDownloadState()
+}
+
+enum class ModelSource { NONE, DOWNLOADED, IMPORTED }
+
+expect class ModelDownloadManager {
+    fun getDownloadState(): StateFlow<ModelDownloadState>
+    suspend fun downloadModel(modelInfo: ModelInfo)
+    fun cancelDownload()
+    suspend fun deleteModel()
+    fun getModelPath(): String?
+    fun getAvailableModels(): List<ModelInfo>
+    suspend fun importModel(externalPath: String): Result<String>
+    suspend fun validateModelFile(path: String): Boolean
+}
+```
+
+Model acquisition paths:
+
+| Path | Flow | When to Use |
+|------|------|-------------|
+| **In-app download** | Tap "Download Model" -> HuggingFace download with progress -> stored in app dir | First-time users, easiest UX |
+| **Select from device** | Tap "Select File" -> file picker -> validate -> copy to app dir | User already has `.litertlm` from AI Edge Gallery, manual download, or previous install |
+
+Both paths store the model in app-managed directory:
+- Android: `context.filesDir/models/`
+- JVM: `~/.noteitup/models/`
+
+Hardcoded model entry:
+```kotlin
+val GEMMA_4_E2B = ModelInfo(
+    name = "Gemma 4 E2B",
+    fileName = "gemma-4-E2B-it.litertlm",
+    sizeBytes = 1_600_000_000L,
+    downloadUrl = "https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it.litertlm",
+    description = "2B params. Best for 8GB+ RAM devices. Fast, private text improvement."
+)
+```
+
+**Step 6: Update AIService for Local Routing**
+
+File: `data/ai/AIService.kt`
+
+- Accept `LocalInferenceEngine` as new constructor dependency
+- Add `LOCAL_GEMMA` branch in `makeRequest()` that bypasses HTTP and delegates to `LocalInferenceEngine`
+- Skip `apiKey.isBlank()` validation when provider is local
+- Update `testConnection()` to test local model inference
+- Update `getDefaultModel()` and `buildApiUrl()` for new enum entry
+
+```kotlin
+class AIService(
+    private val httpClient: HttpClient,
+    private val aiSettingsRepository: AISettingsRepository,
+    private val localInferenceEngine: LocalInferenceEngine
+) {
+    suspend fun improveText(text: String, improvementType: ImprovementType): Result<String> {
+        val settings = aiSettingsRepository.aiSettings.firstOrNull() ?: ...
+        if (settings.selectedProvider == AIProvider.LOCAL_GEMMA) {
+            return makeLocalRequest(improvementType.systemPrompt, text)
+        }
+        // ... existing cloud path ...
+    }
+
+    private suspend fun makeLocalRequest(systemPrompt: String, userMessage: String): Result<String> {
+        if (!localInferenceEngine.isModelLoaded()) {
+            return Result.failure(Exception("Local model not loaded"))
+        }
+        val response = localInferenceEngine.generateResponse(systemPrompt, userMessage)
+        return Result.success(response.trim())
+    }
+}
+```
+
+**Step 7: Update AISettingsRepository**
+
+File: `data/repository/AISettingsRepository.kt`
+
+Minor: skip API key requirement when provider is `LOCAL_GEMMA`.
+
+**Step 8: Update AI Settings UI**
+
+File: `presentation/screens/aisettings/AISettingsScreen.kt`
+
+When `LOCAL_GEMMA` is selected, replace API Key card with Model Management card:
+
+```
++--------------------------------------------+
+|  AI Provider: [Local (Gemma 4)]  v         |
+|                                            |
+|  "Private, on-device AI. No internet       |
+|   needed. Requires 8GB+ RAM."              |
+|  (check) Free - no API key needed          |
++--------------------------------------------+
+|  Model: Gemma 4 E2B (~1.6 GB)             |
+|                                            |
+|  Status: Not Downloaded                    |
+|  [=========>          ] 45%                |
+|                                            |
+|  [Download Model]  [Select from Device]    |
+|                                            |
+|  (i) Supported format: .litertlm          |
+|  (!) Requires 8GB+ RAM                    |
++--------------------------------------------+
+|  [Test Model]                              |
++--------------------------------------------+
+```
+
+After model is available:
+```
++--------------------------------------------+
+|  Model: Gemma 4 E2B                        |
+|  (check) Ready (1.6 GB)                   |
+|                                            |
+|  [Test Model] [Delete] [Change File]       |
+|  (i) Model runs entirely on your device    |
++--------------------------------------------+
+```
+
+Logic:
+- `provider.isLocal` --> show Model Management card, hide API Key card
+- `provider.requiresApiKey` --> show API Key card (existing behavior)
+- Filter `LOCAL_GEMMA` from dropdown when `PlatformCapabilities.hasLocalAISupport()` is false (iOS)
+
+**Step 9: Update AISettings ViewModel & Intents**
+
+New intents:
+```kotlin
+data object DownloadModel : AISettingsIntent
+data object CancelDownload : AISettingsIntent
+data object DeleteModel : AISettingsIntent
+data object LoadModel : AISettingsIntent
+data object SelectModelFile : AISettingsIntent
+data class ModelFileSelected(val path: String) : AISettingsIntent
+```
+
+New state fields:
+```kotlin
+data class AISettingsUiState(
+    // ... existing ...
+    val modelDownloadState: ModelDownloadState = ModelDownloadState.NotDownloaded,
+    val isModelLoaded: Boolean = false,
+    val modelSource: ModelSource = ModelSource.NONE
+)
+```
+
+**Step 10: Update DI Module**
+
+File: `di/AppModule.kt`
+
+```kotlin
+val aiModule = module {
+    singleOf(::AISettingsRepository)
+    singleOf(::LocalInferenceEngine)      // NEW
+    singleOf(::ModelDownloadManager)       // NEW
+    singleOf(::AIService)                  // Now takes LocalInferenceEngine
+    factoryOf(::ImproveTextUseCase)
+    factoryOf(::ChatUseCase)
+}
+```
+
+**Step 11: Update ChatUseCase**
+
+File: `domain/usecase/ChatUseCase.kt`
+
+Update `isConfigured()` to not require API key for `LOCAL_GEMMA`:
+```kotlin
+suspend fun isConfigured(): Boolean {
+    val settings = aiSettingsRepository.aiSettings.firstOrNull() ?: return false
+    if (!settings.enabled) return false
+    if (settings.selectedProvider.isLocal) return true
+    return settings.apiKey.isNotBlank()
+}
+```
+
+#### Model Download: Android Foreground Service
+
+The ~1.6GB model download uses an Android **ForegroundService** to ensure the download:
+- Survives screen navigation and app backgrounding
+- Shows a persistent notification with progress and cancel action
+- Can be cancelled reliably from both the notification and the UI
+
+**Why not Play Asset Delivery?**
+- Model file would need to be in the AAB (2GB+ build artifacts, slow builds)
+- Model updates would require a new app release
+- Only works on Play Store (not F-Droid, sideloading, or Desktop)
+- The "Select File" import feature wouldn't work with Play-managed assets
+
+**Download Architecture:**
+```
+User taps "Download"
+    |
+    v
+ModelDownloadManager.downloadModel()
+    |
+    v
+context.startForegroundService(intent) --> ModelDownloadService starts
+    |
+    v
+ModelDownloadService.onStartCommand():
+  - Creates notification channel "model_download" (IMPORTANCE_LOW)
+  - Shows foreground notification with progress bar + cancel action
+  - Gets ModelDownloadManager from Koin (shared singleton)
+  - Downloads via Ktor HttpClient from HuggingFace
+  - Updates ModelDownloadManager._downloadState (shared StateFlow)
+  - UI observes the same StateFlow --> progress bar updates
+    |
+    v
+On complete: state = Downloaded, stopForeground(), stopSelf()
+On cancel:   state = NotDownloaded, delete temp file, stopSelf()
+On error:    state = Error, stopSelf()
+```
+
+**Notification UX:**
+```
++------------------------------------------+
+| NoteItUP                                 |
+| Downloading Gemma 4 E2B... 45%           |
+| [========>                    ]           |
+|                              [Cancel]    |
++------------------------------------------+
+```
+
+**Components:**
+
+| Component | File | Description |
+|-----------|------|-------------|
+| `ModelDownloadService` | `androidMain/.../data/ai/ModelDownloadService.kt` | Android ForegroundService for background model download |
+
+**JVM (Desktop):** Uses its own `CoroutineScope(SupervisorJob())` for cancellable downloads (no service needed).
+
+**Android Manifest additions:**
+```xml
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+
+<service
+    android:name=".data.ai.ModelDownloadService"
+    android:exported="false"
+    android:foregroundServiceType="dataSync" />
+```
+
+#### Components Summary
+
+| Component | File | Description |
+|-----------|------|-------------|
+| `LocalInferenceEngine` | `data/ai/LocalInferenceEngine.kt` | expect/actual for on-device LLM inference via LiteRT-LM |
+| `ModelDownloadManager` | `data/ai/ModelDownloadManager.kt` | expect/actual for model download, import, and lifecycle |
+| `ModelDownloadService` | `androidMain data/ai/ModelDownloadService.kt` | Android ForegroundService for background model download |
+| `ModelInfo` | `data/ai/ModelDownloadManager.kt` | Data class describing available models |
+| `ModelDownloadState` | `data/ai/ModelDownloadManager.kt` | Sealed class for download progress tracking |
+| `AIProvider.LOCAL_GEMMA` | `domain/model/AIProvider.kt` | New enum entry for local inference provider |
+
+#### Files to Create
+
+| File | Purpose |
+|------|---------|
+| `commonMain/.../data/ai/LocalInferenceEngine.kt` | Expect class for on-device inference |
+| `androidMain/.../data/ai/LocalInferenceEngine.android.kt` | LiteRT-LM GPU implementation |
+| `jvmMain/.../data/ai/LocalInferenceEngine.jvm.kt` | LiteRT-LM CPU implementation |
+| `iosMain/.../data/ai/LocalInferenceEngine.ios.kt` | Stub implementation |
+| `commonMain/.../data/ai/ModelDownloadManager.kt` | Expect class for model lifecycle |
+| `androidMain/.../data/ai/ModelDownloadManager.android.kt` | Android service-based download + file picker import |
+| `androidMain/.../data/ai/ModelDownloadService.kt` | Android ForegroundService for model download |
+| `jvmMain/.../data/ai/ModelDownloadManager.jvm.kt` | JVM download with own CoroutineScope |
+| `iosMain/.../data/ai/ModelDownloadManager.ios.kt` | Stub |
+
+#### Files to Modify
+
+| File | Changes |
+|------|---------|
+| `gradle/libs.versions.toml` | Add litertlm version + library entries |
+| `composeApp/build.gradle.kts` | Add platform-specific LiteRT-LM dependencies |
+| `AndroidManifest.xml` | Add GPU native libs + foreground service permission + service declaration |
+| `domain/model/AIProvider.kt` | Add `LOCAL_GEMMA` entry + `isLocal`/`requiresApiKey` properties |
+| `data/ai/AIService.kt` | Add local inference routing, accept `LocalInferenceEngine` |
+| `data/repository/AISettingsRepository.kt` | Skip API key validation for local provider |
+| `util/PlatformCapabilities.kt` (all platforms) | Add `hasLocalAISupport()` |
+| `di/AppModule.kt` | Register `LocalInferenceEngine`, `ModelDownloadManager` |
+| `presentation/screens/aisettings/AISettingsScreen.kt` | Conditional UI for local vs cloud provider |
+| `presentation/screens/aisettings/AISettingsIntent.kt` | Add download/load/delete/select intents |
+| `presentation/screens/aisettings/AISettingsUiState.kt` | Add model download state fields |
+| `presentation/screens/aisettings/AISettingsViewModel.kt` | Handle new intents |
+| `domain/usecase/ChatUseCase.kt` | Update `isConfigured()` for local provider |
+
+#### LiteRT-LM API Usage (Reference)
+
+```kotlin
+import com.google.ai.edge.litertlm.*
+
+// 1. Initialize engine (takes ~5-10s, run on background thread)
+val engineConfig = EngineConfig(
+    modelPath = "/path/to/gemma-4-E2B-it.litertlm",
+    backend = Backend.GPU(),  // or Backend.CPU()
+    cacheDir = context.cacheDir.path
+)
+val engine = Engine(engineConfig)
+engine.initialize()
+
+// 2. Create conversation with system instruction
+val conversation = engine.createConversation(
+    ConversationConfig(
+        systemInstruction = Contents.of("You are a helpful writing assistant..."),
+        samplerConfig = SamplerConfig(topK = 10, topP = 0.95, temperature = 0.7)
+    )
+)
+
+// 3a. Synchronous response
+val response = conversation.sendMessage("Improve this text: ...")
+println(response.text)
+
+// 3b. Streaming response via Flow
+conversation.sendMessageAsync("Improve this text: ...")
+    .collect { chunk -> print(chunk.text) }
+
+// 4. Cleanup
+conversation.close()
+engine.close()
+```
+
+#### Risks & Mitigations
+
+| Risk | Impact | Mitigation |
+|------|--------|------------|
+| Model file ~1.6GB | Storage-heavy for users | Clear size warning in UI, easy delete option |
+| LiteRT-LM init takes ~5-10s | Perceived latency | Load on first use, keep in memory, show loading indicator |
+| 2B model quality vs cloud LLMs | Lower quality suggestions | Set appropriate expectations in UI ("fast, private, basic improvements") |
+| GPU not available on all Android | Slower inference | Fallback to CPU backend with warning |
+| HuggingFace download may fail | Poor download experience | Retry logic, resume support, progress indicator, cancel option |
+| User has model from elsewhere | Need to import | File picker option to select existing `.litertlm` file |
+
+#### Privacy Advantages
+
+- All AI inference happens on-device -- zero network requests for text processing
+- No API keys stored, no third-party account needed
+- Diary content never leaves the device for AI operations
+- Model runs completely offline after download
+- Aligns with NoteItUP's "Privacy First" design philosophy
+
+---
+
 ### Phase 9 - User Engagement & Analytics ✅ COMPLETED
 
 **In-App Rating & Firebase Analytics for user engagement and app insights.**
@@ -1231,7 +1826,7 @@ Open `iosApp/iosApp.xcodeproj` in Xcode and run.
 | Image Attachments | ✅ | ✅ | ✅ | Gallery picker with thumbnails |
 | PIN Security | ✅ | ✅ | ✅ | 4-6 digit PIN lock |
 | Cloud Sync | ✅ | ✅ | ✅ | Dropbox & Google Drive with AES-256-GCM encryption |
-| AI Writing Assistant | ✅ | ✅ | ✅ | 8 improvement types, 6 providers (Groq, OpenAI, etc.) |
+| AI Writing Assistant | ✅ | ✅ | ✅ | 8 improvement types, 6 cloud providers (Groq, OpenAI, etc.) |
 | Themes | ✅ | ✅ | ✅ | Light/Dark/System with 6 accent colors |
 | Database | ✅ | ✅ | ✅ | SQLDelight with platform-specific drivers |
 
@@ -1256,6 +1851,7 @@ Open `iosApp/iosApp.xcodeproj` in Xcode and run.
 | Location Tagging | ✅ GPS + Geocoding | ❌ Not available | ✅ GPS + Geocoding | Desktops don't have GPS |
 | Daily Reminders | ✅ System notifications | ❌ Not implemented | ✅ System notifications | Could add system tray on Desktop |
 | Firebase Analytics | ✅ Full tracking | ❌ Stub only | ✅ Full tracking | Analytics primarily for mobile |
+| Local AI (Gemma 4) | ✅ LiteRT-LM GPU | ✅ LiteRT-LM CPU | ❌ Not yet available | LiteRT-LM Swift API coming soon |
 
 ---
 
@@ -1420,7 +2016,7 @@ Desktop version is **fully functional** for journaling with the following notes:
 
 ---
 
-*This document reflects the current implementation as of Phase 9 (User Engagement & Analytics). Phases 1-6 are fully implemented. Phase 6 Cloud Sync now uses native Google Identity Services (AuthorizationClient) on Android for Google Drive OAuth. Phase 7 (Day One and Joplin import) is functional on all platforms including iOS. Phase 7.5 (WYSIWYG Markdown Editor), Phase 8 (API-Based AI Integration), and Phase 9 (Analytics & In-App Review) are completed. Brainstorm chat history is now persistent via SQLDelight. Desktop multi-window support has been implemented with menu bar integration.*
+*This document reflects the current implementation as of Phase 9 (User Engagement & Analytics). Phases 1-6 are fully implemented. Phase 6 Cloud Sync now uses native Google Identity Services (AuthorizationClient) on Android for Google Drive OAuth. Phase 7 (Day One and Joplin import) is functional on all platforms including iOS. Phase 7.5 (WYSIWYG Markdown Editor), Phase 8 (API-Based AI Integration), and Phase 9 (Analytics & In-App Review) are completed. Phase 8.5 (Local AI with Gemma 4 via LiteRT-LM) is planned for Android and JVM platforms. Brainstorm chat history is now persistent via SQLDelight. Desktop multi-window support has been implemented with menu bar integration.*
 
 ---
 

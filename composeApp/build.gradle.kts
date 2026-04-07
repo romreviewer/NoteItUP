@@ -55,6 +55,9 @@ kotlin {
             // Biometric authentication
             implementation(libs.androidx.biometric)
 
+            // Splash Screen
+            implementation(libs.androidx.splashscreen)
+
             // Ktor Android engine
             implementation(libs.ktor.client.okhttp)
 
@@ -72,6 +75,9 @@ kotlin {
 
             // Google Identity Services (native Google Sign-In for Drive OAuth)
             implementation(libs.play.services.auth)
+
+            // Local AI (LiteRT-LM)
+            implementation(libs.litertlm.android)
 
             // Firebase (using BOM via dependencies block below)
         }
@@ -142,6 +148,9 @@ kotlin {
 
             // Apache Commons Compress for TAR extraction
             implementation("org.apache.commons:commons-compress:1.25.0")
+
+            // Local AI (LiteRT-LM)
+            implementation(libs.litertlm.jvm)
         }
     }
 }
@@ -154,8 +163,8 @@ android {
         applicationId = "com.romreviewertools.noteitup"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 11
-        versionName = "1.5.0"
+        versionCode = 12
+        versionName = "1.5.1"
 
         // API Keys from local.properties (gitignored)
         val dropboxAppKey = localProperties.getProperty("DROPBOX_APP_KEY", "")
