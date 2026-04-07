@@ -164,7 +164,7 @@ android {
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 12
-        versionName = "1.5.1"
+        versionName = "1.6.0"
 
         // API Keys from local.properties (gitignored)
         val dropboxAppKey = localProperties.getProperty("DROPBOX_APP_KEY", "")
