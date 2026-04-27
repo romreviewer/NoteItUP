@@ -681,12 +681,14 @@ fun EditorScreen(
                 }
 
                 // AI Suggestion Dialog
-                if (uiState.aiSuggestion != null) {
+                val currentAiSuggestion = uiState.aiSuggestion
+                if (currentAiSuggestion != null) {
                     AISuggestionDialog(
-                        suggestion = uiState.aiSuggestion!!,
+                        suggestion = currentAiSuggestion,
+                        isStreaming = uiState.isStreamingImprovement,
                         onAccept = {
                             viewModel.processIntent(EditorIntent.AcceptAISuggestion)
-                            richTextState.setMarkdown(uiState.aiSuggestion!!)
+                            richTextState.setMarkdown(currentAiSuggestion)
                         },
                         onDismiss = {
                             viewModel.processIntent(EditorIntent.DismissAISuggestion)
@@ -979,13 +981,23 @@ private fun LocationSection(
 @Composable
 private fun AISuggestionDialog(
     suggestion: String,
+    isStreaming: Boolean = false,
     onAccept: () -> Unit,
     onDismiss: () -> Unit
 ) {
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { if (!isStreaming) onDismiss() },
         title = {
-            Text("AI Suggestion")
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("AI Suggestion")
+                if (isStreaming) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp
+                    )
+                }
+            }
         },
         text = {
             Column(
@@ -994,7 +1006,7 @@ private fun AISuggestionDialog(
                     .verticalScroll(rememberScrollState())
             ) {
                 Text(
-                    text = "AI has improved your text:",
+                    text = if (isStreaming) "Generating improved text..." else "AI has improved your text:",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -1014,13 +1026,16 @@ private fun AISuggestionDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onAccept) {
+            TextButton(
+                onClick = onAccept,
+                enabled = !isStreaming
+            ) {
                 Text("Accept")
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Dismiss")
+                Text(if (isStreaming) "Cancel" else "Dismiss")
             }
         }
     )

@@ -3,6 +3,7 @@ package com.romreviewertools.noteitup.domain.usecase
 import com.romreviewertools.noteitup.data.ai.AIService
 import com.romreviewertools.noteitup.data.ai.ChatMessage
 import com.romreviewertools.noteitup.data.repository.AISettingsRepository
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 
 /**
@@ -65,6 +66,22 @@ class ChatUseCase(
         }
 
         return aiService.chat(
+            systemPrompt = SYSTEM_PROMPT,
+            messages = conversationHistory + ChatMessage(role = "user", content = userMessage),
+            onModelLoading = onModelLoading
+        )
+    }
+
+    /**
+     * Send a message and get a streaming response (token-by-token).
+     * Returns a Flow that emits partial text chunks as generated.
+     */
+    fun sendMessageStream(
+        userMessage: String,
+        conversationHistory: List<ChatMessage>,
+        onModelLoading: (() -> Unit)? = null
+    ): Flow<String> {
+        return aiService.chatStream(
             systemPrompt = SYSTEM_PROMPT,
             messages = conversationHistory + ChatMessage(role = "user", content = userMessage),
             onModelLoading = onModelLoading

@@ -124,10 +124,13 @@ fun BrainstormScreen(
         }
     }
 
-    // Auto-scroll to bottom when new messages arrive
-    LaunchedEffect(uiState.messages.size) {
-        if (uiState.messages.isNotEmpty()) {
-            listState.animateScrollToItem(uiState.messages.size - 1)
+    // Auto-scroll to bottom when new messages arrive or streaming text updates
+    LaunchedEffect(uiState.messages.size, uiState.streamingText) {
+        val totalItems = uiState.messages.size +
+            (if (uiState.streamingText != null) 1 else 0) +
+            (if (uiState.isLoading) 1 else 0)
+        if (totalItems > 0) {
+            listState.animateScrollToItem(totalItems - 1)
         }
     }
 
@@ -220,8 +223,16 @@ fun BrainstormScreen(
                         )
                     }
 
-                    // Loading indicator
-                    if (uiState.isLoading) {
+                    // Streaming response (shows text as it generates)
+                    val currentStreamingText = uiState.streamingText
+                    if (currentStreamingText != null) {
+                        item(key = "streaming") {
+                            StreamingMessageBubble(text = currentStreamingText)
+                        }
+                    }
+
+                    // Loading indicator (only when waiting for full response, not streaming)
+                    if (uiState.isLoading && uiState.streamingText == null) {
                         item {
                             LoadingIndicator()
                         }
@@ -240,7 +251,7 @@ fun BrainstormScreen(
                             inputText = ""
                         }
                     },
-                    isLoading = uiState.isLoading,
+                    isLoading = uiState.isLoading || uiState.streamingText != null,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp)
@@ -469,6 +480,49 @@ private fun LoadingIndicator(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun StreamingMessageBubble(
+    text: String,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.Start
+    ) {
+        Surface(
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            shape = RoundedCornerShape(
+                topStart = 16.dp,
+                topEnd = 16.dp,
+                bottomStart = 4.dp,
+                bottomEnd = 16.dp
+            ),
+            modifier = Modifier.widthIn(max = 320.dp)
+        ) {
+            Column(modifier = Modifier.padding(12.dp)) {
+                Text(
+                    text = text,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                CircularProgressIndicator(
+                    modifier = Modifier.size(12.dp),
+                    strokeWidth = 1.5.dp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                )
+            }
+        }
+
+        Text(
+            text = "AI Assistant",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+        )
     }
 }
 

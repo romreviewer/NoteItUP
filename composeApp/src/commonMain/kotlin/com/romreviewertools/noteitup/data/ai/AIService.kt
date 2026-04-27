@@ -11,7 +11,9 @@ import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.flow
 
 /**
  * Service for interacting with AI providers using OpenAI-compatible APIs
@@ -152,6 +154,52 @@ class AIService(
     }
 
     /**
+     * Streaming text improvement for local on-device model.
+     * Returns a Flow that emits partial text chunks as they are generated.
+     */
+    fun improveTextStream(
+        text: String,
+        improvementType: ImprovementType,
+        onModelLoading: (() -> Unit)? = null
+    ): Flow<String> = flow {
+        val settings = aiSettingsRepository.aiSettings.firstOrNull()
+            ?: throw Exception("AI settings not configured")
+
+        if (!settings.enabled) {
+            throw Exception("AI features are disabled")
+        }
+
+        if (settings.selectedProvider != AIProvider.LOCAL_GEMMA) {
+            // For non-local providers, fall back to full response
+            val result = improveText(text, improvementType, onModelLoading)
+            result.fold(
+                onSuccess = { emit(it) },
+                onFailure = { throw it }
+            )
+            return@flow
+        }
+
+        // Ensure model is loaded
+        if (!localInferenceEngine.isModelLoaded()) {
+            val modelPath = modelDownloadManager.getModelPath()
+            if (modelPath != null) {
+                onModelLoading?.invoke()
+                localInferenceEngine.loadModel(modelPath)
+                println("AIService: Auto-loaded local model from: $modelPath")
+            } else {
+                throw Exception("AI model not downloaded. Go to AI Settings to download the Gemma 4 model.")
+            }
+        }
+
+        localInferenceEngine.generateResponseStream(
+            systemPrompt = improvementType.systemPrompt,
+            userMessage = text
+        ).collect { chunk ->
+            emit(chunk)
+        }
+    }
+
+    /**
      * Multi-turn chat conversation with AI.
      * @param onModelLoading Called when the local model starts loading for the first time in this session.
      */
@@ -210,6 +258,56 @@ class AIService(
             Result.success(responseText.trim())
         } catch (e: Exception) {
             Result.failure(Exception("Failed to get response: ${e.message}"))
+        }
+    }
+
+    /**
+     * Streaming chat for local on-device model.
+     * Returns a Flow that emits partial text chunks as they are generated.
+     * @param onModelLoading Called when the local model starts loading for the first time in this session.
+     */
+    fun chatStream(
+        systemPrompt: String,
+        messages: List<ChatMessage>,
+        onModelLoading: (() -> Unit)? = null
+    ): Flow<String> = flow {
+        val settings = aiSettingsRepository.aiSettings.firstOrNull()
+            ?: throw Exception("AI settings not configured")
+
+        if (!settings.enabled) {
+            throw Exception("AI features are disabled")
+        }
+
+        if (settings.selectedProvider != AIProvider.LOCAL_GEMMA) {
+            // For non-local providers, fall back to full response
+            val result = chat(systemPrompt, messages, onModelLoading)
+            result.fold(
+                onSuccess = { emit(it) },
+                onFailure = { throw it }
+            )
+            return@flow
+        }
+
+        val userMessage = messages.lastOrNull { it.role == "user" }?.content
+            ?: throw Exception("No user message found")
+
+        // Ensure model is loaded
+        if (!localInferenceEngine.isModelLoaded()) {
+            val modelPath = modelDownloadManager.getModelPath()
+            if (modelPath != null) {
+                onModelLoading?.invoke()
+                localInferenceEngine.loadModel(modelPath)
+                println("AIService: Auto-loaded local model from: $modelPath")
+            } else {
+                throw Exception("AI model not downloaded. Go to AI Settings to download the Gemma 4 model.")
+            }
+        }
+
+        localInferenceEngine.generateResponseStream(
+            systemPrompt = systemPrompt,
+            userMessage = userMessage
+        ).collect { chunk ->
+            emit(chunk)
         }
     }
 

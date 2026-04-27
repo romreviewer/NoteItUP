@@ -33,6 +33,7 @@ data class EditorUiState(
     val aiSuggestion: String? = null,
     val aiError: String? = null,
     val aiStatusMessage: String? = null, // Transient info e.g. "Loading AI model..."
+    val isStreamingImprovement: Boolean = false, // True while tokens are still being generated
     val hasUnsavedChanges: Boolean = false,
     // In-app review
     val shouldShowReviewPrompt: Boolean = false

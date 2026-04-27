@@ -443,7 +443,13 @@ class EditorViewModel(
     private fun improveText(improvementType: com.romreviewertools.noteitup.data.ai.ImprovementType) {
         viewModelScope.launch {
             _uiState.update {
-                it.copy(isImprovingText = true, aiError = null, aiSuggestion = null, aiStatusMessage = null)
+                it.copy(
+                    isImprovingText = true,
+                    aiError = null,
+                    aiSuggestion = null,
+                    isStreamingImprovement = false,
+                    aiStatusMessage = null
+                )
             }
 
             try {
@@ -458,22 +464,34 @@ class EditorViewModel(
                     return@launch
                 }
 
-                val result = improveTextUseCase(
+                // Use streaming — shows tokens as they arrive
+                var accumulated = ""
+                improveTextUseCase.stream(
                     text = textToImprove,
                     improvementType = improvementType,
                     onModelLoading = {
-                        // Called when the local model starts loading for the first time
                         _uiState.update {
                             it.copy(aiStatusMessage = "Loading AI model for first use...")
                         }
                     }
-                )
+                ).collect { chunk ->
+                    accumulated += chunk
+                    _uiState.update {
+                        it.copy(
+                            aiSuggestion = accumulated,
+                            isStreamingImprovement = true,
+                            isImprovingText = false,
+                            aiStatusMessage = null
+                        )
+                    }
+                }
 
+                // Streaming complete
                 _uiState.update {
                     it.copy(
+                        aiSuggestion = accumulated.trim(),
+                        isStreamingImprovement = false,
                         isImprovingText = false,
-                        aiSuggestion = result.getOrNull(),
-                        aiError = result.exceptionOrNull()?.message,
                         aiStatusMessage = null
                     )
                 }
@@ -481,6 +499,7 @@ class EditorViewModel(
                 _uiState.update {
                     it.copy(
                         isImprovingText = false,
+                        isStreamingImprovement = false,
                         aiError = e.message ?: "Failed to improve text",
                         aiStatusMessage = null
                     )
@@ -490,7 +509,7 @@ class EditorViewModel(
     }
 
     private fun dismissAISuggestion() {
-        _uiState.update { it.copy(aiSuggestion = null, aiError = null) }
+        _uiState.update { it.copy(aiSuggestion = null, aiError = null, isStreamingImprovement = false) }
     }
 
     private fun acceptAISuggestion() {

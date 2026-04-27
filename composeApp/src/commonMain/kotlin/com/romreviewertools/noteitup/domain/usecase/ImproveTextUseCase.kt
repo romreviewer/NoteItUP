@@ -2,6 +2,7 @@ package com.romreviewertools.noteitup.domain.usecase
 
 import com.romreviewertools.noteitup.data.ai.AIService
 import com.romreviewertools.noteitup.data.ai.ImprovementType
+import kotlinx.coroutines.flow.Flow
 
 /**
  * Use case for improving text using AI
@@ -26,5 +27,16 @@ class ImproveTextUseCase(
         }
 
         return aiService.improveText(text, improvementType, onModelLoading)
+    }
+
+    /**
+     * Streaming version — returns a Flow that emits partial text as generated.
+     */
+    fun stream(
+        text: String,
+        improvementType: ImprovementType,
+        onModelLoading: (() -> Unit)? = null
+    ): Flow<String> {
+        return aiService.improveTextStream(text, improvementType, onModelLoading)
     }
 }

@@ -6,11 +6,13 @@ import com.romreviewertools.noteitup.data.ai.ChatMessage
 import com.romreviewertools.noteitup.data.analytics.AnalyticsEvent
 import com.romreviewertools.noteitup.data.analytics.AnalyticsService
 import com.romreviewertools.noteitup.data.repository.AISettingsRepository
+import com.romreviewertools.noteitup.domain.model.AIProvider
 import com.romreviewertools.noteitup.domain.repository.DiaryRepository
 import com.romreviewertools.noteitup.domain.usecase.ChatUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -98,7 +100,7 @@ class BrainstormViewModel(
             )
 
             _uiState.update {
-                it.copy(isLoading = true, error = null)
+                it.copy(isLoading = true, error = null, streamingText = null)
             }
 
             // Build conversation history for API (exclude the message we just added)
@@ -111,8 +113,25 @@ class BrainstormViewModel(
                     )
                 }
 
-            // Get AI response
-            val result = chatUseCase.sendMessage(
+            // Check if we should use streaming (local model)
+            val settings = aiSettingsRepository.aiSettings.firstOrNull()
+            val useStreaming = settings?.selectedProvider == AIProvider.LOCAL_GEMMA
+
+            if (useStreaming) {
+                sendMessageStreaming(message, conversationHistory)
+            } else {
+                sendMessageNonStreaming(message, conversationHistory)
+            }
+        }
+    }
+
+    private suspend fun sendMessageStreaming(
+        message: String,
+        conversationHistory: List<ChatMessage>
+    ) {
+        try {
+            var accumulated = ""
+            chatUseCase.sendMessageStream(
                 userMessage = message,
                 conversationHistory = conversationHistory,
                 onModelLoading = {
@@ -120,30 +139,69 @@ class BrainstormViewModel(
                         it.copy(statusMessage = "Loading AI model for first use...")
                     }
                 }
-            )
-
-            result.fold(
-                onSuccess = { response ->
-                    val assistantTimestamp = System.currentTimeMillis()
-                    diaryRepository.insertBrainstormMessage(
-                        id = assistantTimestamp.toString(),
-                        content = response,
-                        isUser = false,
-                        timestamp = assistantTimestamp
-                    )
-                    _uiState.update { it.copy(isLoading = false, statusMessage = null) }
-                },
-                onFailure = { error ->
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            statusMessage = null,
-                            error = error.message ?: "An error occurred"
-                        )
-                    }
+            ).collect { chunk ->
+                accumulated += chunk
+                _uiState.update {
+                    it.copy(streamingText = accumulated, isLoading = false)
                 }
+            }
+
+            // Streaming complete — persist the final response
+            val assistantTimestamp = System.currentTimeMillis()
+            diaryRepository.insertBrainstormMessage(
+                id = assistantTimestamp.toString(),
+                content = accumulated.trim(),
+                isUser = false,
+                timestamp = assistantTimestamp
             )
+            _uiState.update { it.copy(streamingText = null, statusMessage = null) }
+        } catch (e: Exception) {
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    streamingText = null,
+                    statusMessage = null,
+                    error = e.message ?: "An error occurred"
+                )
+            }
         }
+    }
+
+    private suspend fun sendMessageNonStreaming(
+        message: String,
+        conversationHistory: List<ChatMessage>
+    ) {
+        val result = chatUseCase.sendMessage(
+            userMessage = message,
+            conversationHistory = conversationHistory,
+            onModelLoading = {
+                _uiState.update {
+                    it.copy(statusMessage = "Loading AI model for first use...")
+                }
+            }
+        )
+
+        result.fold(
+            onSuccess = { response ->
+                val assistantTimestamp = System.currentTimeMillis()
+                diaryRepository.insertBrainstormMessage(
+                    id = assistantTimestamp.toString(),
+                    content = response,
+                    isUser = false,
+                    timestamp = assistantTimestamp
+                )
+                _uiState.update { it.copy(isLoading = false, statusMessage = null) }
+            },
+            onFailure = { error ->
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        statusMessage = null,
+                        error = error.message ?: "An error occurred"
+                    )
+                }
+            }
+        )
     }
 
     private fun clearChat() {
@@ -184,7 +242,8 @@ data class BrainstormUiState(
     val statusMessage: String? = null, // Transient info e.g. "Loading AI model..."
     val isAIConfigured: Boolean = true,
     val textToCopy: String? = null,
-    val textToInsert: String? = null
+    val textToInsert: String? = null,
+    val streamingText: String? = null // Partial response being generated token-by-token
 )
 
 /**
