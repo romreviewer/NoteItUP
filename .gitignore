@@ -28,6 +28,7 @@ iosApp/Pods/
 iosApp/.symlinks/
 iosApp/build/
 *.xcuserdata/
+xcuserdata/
 *.xcscmblueprint
 *.xccheckout
 DerivedData/
