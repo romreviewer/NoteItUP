@@ -13,6 +13,8 @@ import com.romreviewertools.noteitup.domain.model.DiaryEntry
 import com.romreviewertools.noteitup.domain.model.ImageAttachment
 import com.romreviewertools.noteitup.domain.model.Location
 import com.romreviewertools.noteitup.domain.model.Mood
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import com.romreviewertools.noteitup.domain.repository.DiaryRepository
 import com.romreviewertools.noteitup.domain.usecase.CreateEntryUseCase
 import com.romreviewertools.noteitup.domain.usecase.GetAllFoldersUseCase
@@ -84,7 +86,6 @@ class EditorViewModel(
     fun processIntent(intent: EditorIntent) {
         when (intent) {
             is EditorIntent.LoadEntry -> loadEntry(intent.entryId)
-            is EditorIntent.UpdateTitle -> updateTitle(intent.title)
             is EditorIntent.UpdateContent -> updateContent(intent.content)
             is EditorIntent.UpdateMood -> updateMood(intent.mood)
             is EditorIntent.ToggleTag -> toggleTag(intent.tagId)
@@ -123,7 +124,6 @@ class EditorViewModel(
                         it.copy(
                             isLoading = false,
                             entryId = entry.id,
-                            title = entry.title,
                             content = entry.content,
                             mood = entry.mood,
                             isFavorite = entry.isFavorite,
@@ -151,10 +151,6 @@ class EditorViewModel(
                 }
             }
         }
-    }
-
-    private fun updateTitle(title: String) {
-        updateState { it.copy(title = title) }
     }
 
     private fun updateContent(content: String) {
@@ -186,8 +182,8 @@ class EditorViewModel(
 
     private fun save() {
         val currentState = _uiState.value
-        if (currentState.title.isBlank() && currentState.content.isBlank()) {
-            _uiState.update { it.copy(error = "Please add a title or content") }
+        if (currentState.content.isBlank()) {
+            _uiState.update { it.copy(error = "Please write something first") }
             return
         }
 
@@ -196,7 +192,6 @@ class EditorViewModel(
 
             val result = if (currentState.isNewEntry) {
                 createEntryUseCase(
-                    title = currentState.title,
                     content = currentState.content,
                     folderId = currentState.selectedFolderId,
                     mood = currentState.mood,
@@ -204,8 +199,9 @@ class EditorViewModel(
                 )
             } else {
                 val now = Clock.System.now()
+                val derivedTitle = extractTitleFromContent(currentState.content, now)
                 val entry = originalEntry?.copy(
-                    title = currentState.title.ifBlank { "Untitled" },
+                    title = derivedTitle,
                     content = currentState.content,
                     updatedAt = now,
                     folderId = currentState.selectedFolderId,
@@ -214,7 +210,7 @@ class EditorViewModel(
                     location = currentState.location
                 ) ?: DiaryEntry(
                     id = currentState.entryId ?: uuid4().toString(),
-                    title = currentState.title.ifBlank { "Untitled" },
+                    title = derivedTitle,
                     content = currentState.content,
                     createdAt = now,
                     updatedAt = now,
@@ -525,6 +521,16 @@ class EditorViewModel(
         }
     }
 
+    private fun extractTitleFromContent(content: String, createdAt: kotlin.time.Instant): String {
+        val lines = content.lines().filter { it.isNotBlank() }
+        val first = lines.firstOrNull()
+            ?: return "Entry - ${createdAt.toLocalDateTime(TimeZone.currentSystemDefault()).date}"
+        val cleaned = if (first.trim().startsWith("#")) first.trim().removePrefix("#").trim() else first
+        return cleaned.take(100).ifBlank {
+            "Entry - ${createdAt.toLocalDateTime(TimeZone.currentSystemDefault()).date}"
+        }
+    }
+
     private fun updateState(update: (EditorUiState) -> EditorUiState) {
         _uiState.update { currentState ->
             val newState = update(currentState)
@@ -536,8 +542,7 @@ class EditorViewModel(
 
     private fun checkForChanges(state: EditorUiState): Boolean {
         if (state.isNewEntry) {
-            return state.title.isNotBlank() ||
-                    state.content.isNotBlank() ||
+            return state.content.isNotBlank() ||
                     state.mood != null ||
                     state.selectedFolderId != null ||
                     state.selectedTagIds.isNotEmpty() ||
@@ -545,8 +550,7 @@ class EditorViewModel(
                     state.location != null
         }
 
-        return state.title != (originalEntry?.title ?: "") ||
-                state.content != (originalEntry?.content ?: "") ||
+        return state.content != (originalEntry?.content ?: "") ||
                 state.mood != originalEntry?.mood ||
                 state.isFavorite != (originalEntry?.isFavorite ?: false) ||
                 state.selectedFolderId != originalFolderId ||

@@ -91,7 +91,7 @@ multiplatform-markdown-renderer = { module = "com.mikepenz:multiplatform-markdow
 multiplatform-markdown-renderer-m3 = { module = "com.mikepenz:multiplatform-markdown-renderer-m3", version.ref = "multiplatform-markdown" }
 
 # Rich Text Editor
-richeditor-compose = { module = "com.mohamedrejeb.richeditor:richeditor-compose", version = "1.0.0-rc07" }
+richeditor-compose = { module = "com.mohamedrejeb.richeditor:richeditor-compose", version = "1.0.0-rc14" }
 
 # Ktor HTTP Client
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }

@@ -8,7 +8,6 @@ import com.romreviewertools.noteitup.domain.model.Tag
 
 data class EditorUiState(
     val entryId: String? = null,
-    val title: String = "",
     val content: String = "",
     val mood: Mood? = null,
     val isFavorite: Boolean = false,
