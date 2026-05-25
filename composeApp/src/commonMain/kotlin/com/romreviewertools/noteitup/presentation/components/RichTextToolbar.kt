@@ -16,6 +16,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.filled.FormatBold
 import androidx.compose.material.icons.filled.FormatColorText
+import androidx.compose.material.icons.filled.Redo
+import androidx.compose.material.icons.filled.Undo
 import androidx.compose.material.icons.filled.FormatItalic
 import androidx.compose.material.icons.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.FormatListNumbered
@@ -54,6 +56,24 @@ fun RichTextToolbar(
             .padding(vertical = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
+        // Undo
+        FormatButton(
+            icon = Icons.Default.Undo,
+            contentDescription = "Undo",
+            isActive = false,
+            enabled = richTextState.history.canUndo,
+            onClick = { richTextState.history.undo() }
+        )
+
+        // Redo
+        FormatButton(
+            icon = Icons.Default.Redo,
+            contentDescription = "Redo",
+            isActive = false,
+            enabled = richTextState.history.canRedo,
+            onClick = { richTextState.history.redo() }
+        )
+
         // Bold
         FormatButton(
             icon = Icons.Default.FormatBold,
