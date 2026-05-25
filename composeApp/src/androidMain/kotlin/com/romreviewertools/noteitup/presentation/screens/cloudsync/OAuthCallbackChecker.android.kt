@@ -4,8 +4,6 @@ import com.romreviewertools.noteitup.OAuthCallbackHolder
 import com.romreviewertools.noteitup.data.cloud.CloudProviderType
 
 actual fun consumePendingOAuthCallback(): OAuthCallback? {
-    val callback = OAuthCallbackHolder.consumeCode() ?: return null
-    val (code, isDropbox) = callback
-    val provider = if (isDropbox) CloudProviderType.DROPBOX else CloudProviderType.GOOGLE_DRIVE
-    return OAuthCallback(code = code, provider = provider)
+    val code = OAuthCallbackHolder.consumeCode() ?: return null
+    return OAuthCallback(code = code, provider = CloudProviderType.GOOGLE_DRIVE)
 }

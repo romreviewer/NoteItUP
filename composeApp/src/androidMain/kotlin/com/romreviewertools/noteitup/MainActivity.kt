@@ -2,6 +2,7 @@ package com.romreviewertools.noteitup
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.IntentSenderRequest
@@ -11,6 +12,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.fragment.app.FragmentActivity
 import com.romreviewertools.noteitup.data.cloud.CloudProviderType
+import com.romreviewertools.noteitup.data.cloud.DropboxAuthHelper
 import com.romreviewertools.noteitup.data.cloud.GoogleDriveAuthHelper
 import com.romreviewertools.noteitup.data.review.InAppReviewManager
 import com.romreviewertools.noteitup.data.security.ActivityHolder
@@ -19,6 +21,9 @@ import com.romreviewertools.noteitup.presentation.screens.cloudsync.OAuthCallbac
 import org.koin.android.ext.android.inject
 
 class MainActivity : FragmentActivity() {
+    companion object {
+        private const val TAG = "MainActivity"
+    }
     private val inAppReviewManager: InAppReviewManager by inject()
 
     private val googleAuthLauncher = registerForActivityResult(
@@ -41,6 +46,9 @@ class MainActivity : FragmentActivity() {
         // Register activity for Google Drive native auth
         GoogleDriveAuthHelper.init(this, googleAuthLauncher)
 
+        // Register activity for Dropbox SDK native auth
+        DropboxAuthHelper.init(this)
+
         // Handle OAuth callback from initial launch
         handleOAuthIntent(intent)
 
@@ -54,6 +62,9 @@ class MainActivity : FragmentActivity() {
         ActivityHolder.setActivity(this)
         inAppReviewManager.setActivity(this)
         GoogleDriveAuthHelper.init(this, googleAuthLauncher)
+        DropboxAuthHelper.init(this)
+        // The Dropbox SDK auth flow returns via SharedPreferences, so we poll on resume.
+        DropboxAuthHelper.checkAuthResult()
     }
 
     override fun onDestroy() {
@@ -61,6 +72,7 @@ class MainActivity : FragmentActivity() {
         ActivityHolder.clearActivity()
         inAppReviewManager.clearActivity()
         GoogleDriveAuthHelper.clear()
+        DropboxAuthHelper.clear()
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -69,45 +81,38 @@ class MainActivity : FragmentActivity() {
     }
 
     private fun handleOAuthIntent(intent: Intent?) {
-        val uri = intent?.data ?: return
+        val uri = intent?.data
+        Log.d(TAG, "handleOAuthIntent: uri=$uri")
+        if (uri == null) return
         val scheme = uri.scheme ?: return
+        Log.d(TAG, "OAuth intent: scheme=$scheme, host=${uri.host}")
 
-        // Check if this is Google Drive OAuth callback
+        // Google Drive OAuth callback. Dropbox is now handled by the SDK's AuthActivity.
         if (scheme == "com.romreviewertools.noteitup" && uri.host == "oauth2callback") {
             val code = uri.getQueryParameter("code")
+            Log.d(TAG, "Google Drive callback: code=${if (code != null) "found (${code.take(10)}...)" else "null"}")
             if (code != null) {
                 OAuthCallbackHolder.pendingCode = code
-                OAuthCallbackHolder.isDropbox = false
                 // Emit to SharedFlow for reactive handling
                 OAuthCallbackEmitter.emit(OAuthCallback(code, CloudProviderType.GOOGLE_DRIVE))
             }
-        }
-        // Check if this is Dropbox OAuth callback (db-APP_KEY format)
-        else if (scheme.startsWith("db-")) {
-            val code = uri.getQueryParameter("code")
-            if (code != null) {
-                OAuthCallbackHolder.pendingCode = code
-                OAuthCallbackHolder.isDropbox = true
-                // Emit to SharedFlow for reactive handling
-                OAuthCallbackEmitter.emit(OAuthCallback(code, CloudProviderType.DROPBOX))
-            }
+        } else {
+            Log.d(TAG, "OAuth intent: scheme not recognized, ignoring")
         }
     }
 }
 
 /**
- * Simple holder for OAuth callback data.
+ * Simple holder for the Google Drive OAuth callback code.
  * The CloudSyncScreen will check this when it's displayed.
  */
 object OAuthCallbackHolder {
     var pendingCode: String? = null
-    var isDropbox: Boolean = false
 
-    fun consumeCode(): Pair<String, Boolean>? {
+    fun consumeCode(): String? {
         val code = pendingCode ?: return null
-        val dropbox = isDropbox
         pendingCode = null
-        return code to dropbox
+        return code
     }
 }
 

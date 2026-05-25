@@ -45,6 +45,9 @@ play-services-auth = "21.3.0"
 # Local AI (LiteRT-LM)
 litertlm = "0.10.0"
 
+# Dropbox SDK
+dropbox-sdk = "7.0.0"
+
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlin-testJunit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
@@ -118,6 +121,9 @@ play-services-auth = { module = "com.google.android.gms:play-services-auth", ver
 # Local AI (LiteRT-LM)
 litertlm-android = { module = "com.google.ai.edge.litertlm:litertlm-android", version.ref = "litertlm" }
 litertlm-jvm = { module = "com.google.ai.edge.litertlm:litertlm-jvm", version.ref = "litertlm" }
+
+# Dropbox SDK (Android)
+dropbox-android-sdk = { module = "com.dropbox.core:dropbox-android-sdk", version.ref = "dropbox-sdk" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

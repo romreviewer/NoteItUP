@@ -8,6 +8,7 @@ import androidx.activity.result.IntentSenderRequest
 import com.google.android.gms.auth.api.identity.AuthorizationClient
 import com.google.android.gms.auth.api.identity.AuthorizationRequest
 import com.google.android.gms.auth.api.identity.Identity
+import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.common.api.Scope
 import kotlinx.coroutines.CompletableDeferred
 
@@ -28,7 +29,7 @@ object GoogleDriveAuthHelper {
 
     private var activity: Activity? = null
     private var launcher: ActivityResultLauncher<IntentSenderRequest>? = null
-    private var pendingDeferred: CompletableDeferred<String?>? = null
+    private var pendingDeferred: CompletableDeferred<NativeAuthResult>? = null
 
     fun init(activity: Activity, launcher: ActivityResultLauncher<IntentSenderRequest>) {
         this.activity = activity
@@ -44,19 +45,21 @@ object GoogleDriveAuthHelper {
 
     /**
      * Starts native Google authorization for Drive appdata scope.
-     * Returns the serverAuthCode on success, or null on failure/cancellation.
+     * Returns the serverAuthCode on success, or a Failed/Cancelled result describing why.
      */
-    suspend fun authorize(webClientId: String): String? {
+    suspend fun authorize(webClientId: String): NativeAuthResult {
+        Log.d(TAG, "authorize() called, clientId=${webClientId.take(10)}...")
+        println("[GoogleDriveAuthHelper] authorize() clientId=${webClientId.take(10)}...")
         val currentActivity = activity ?: run {
             Log.e(TAG, "Activity not available")
-            return null
+            return NativeAuthResult.Failed("Activity not available")
         }
         val currentLauncher = launcher ?: run {
             Log.e(TAG, "Launcher not available")
-            return null
+            return NativeAuthResult.Failed("Launcher not available")
         }
 
-        val deferred = CompletableDeferred<String?>()
+        val deferred = CompletableDeferred<NativeAuthResult>()
         pendingDeferred = deferred
 
         val authRequest = AuthorizationRequest.builder()
@@ -73,30 +76,36 @@ object GoogleDriveAuthHelper {
                     val pendingIntent = result.pendingIntent
                     if (pendingIntent != null) {
                         try {
+                            Log.d(TAG, "Launching consent UI for user authorization")
                             val intentSenderRequest = IntentSenderRequest.Builder(pendingIntent).build()
                             currentLauncher.launch(intentSenderRequest)
                         } catch (e: Exception) {
                             Log.e(TAG, "Failed to launch consent UI", e)
-                            deferred.complete(null)
+                            println("[GoogleDriveAuthHelper] launch consent UI failed: ${e.javaClass.simpleName}: ${e.message}")
+                            deferred.complete(NativeAuthResult.Failed("Failed to launch consent UI: ${e.message}"))
                         }
                     } else {
                         Log.e(TAG, "Resolution required but no PendingIntent")
-                        deferred.complete(null)
+                        deferred.complete(NativeAuthResult.Failed("Resolution required but no PendingIntent"))
                     }
                 } else {
                     // Already authorized — extract server auth code
                     val code = result.serverAuthCode
                     if (code != null) {
-                        deferred.complete(code)
+                        Log.d(TAG, "Already authorized, code received (${code.take(10)}...)")
+                        deferred.complete(NativeAuthResult.Success(code))
                     } else {
                         Log.e(TAG, "Authorized but no serverAuthCode returned")
-                        deferred.complete(null)
+                        println("[GoogleDriveAuthHelper] authorized but serverAuthCode=null — check that GOOGLE_CLIENT_ID is the Web client ID and offline access is enabled")
+                        deferred.complete(NativeAuthResult.Failed("No serverAuthCode returned. Verify GOOGLE_CLIENT_ID is the Web OAuth client ID."))
                     }
                 }
             }
             .addOnFailureListener { e ->
                 Log.e(TAG, "Authorization failed", e)
-                deferred.complete(null)
+                val detail = describeAuthFailure(e)
+                println("[GoogleDriveAuthHelper] authorize() failed: $detail")
+                deferred.complete(NativeAuthResult.Failed(detail))
             }
 
         return deferred.await()
@@ -107,6 +116,8 @@ object GoogleDriveAuthHelper {
      * Completes the pending deferred with the auth result.
      */
     fun handleAuthResult(resultCode: Int, data: Intent?) {
+        Log.d(TAG, "handleAuthResult: resultCode=$resultCode")
+        println("[GoogleDriveAuthHelper] handleAuthResult: resultCode=$resultCode")
         val deferred = pendingDeferred ?: return
         pendingDeferred = null
 
@@ -118,21 +129,46 @@ object GoogleDriveAuthHelper {
                     val authResult = authClient.getAuthorizationResultFromIntent(data)
                     val code = authResult.serverAuthCode
                     if (code != null) {
-                        deferred.complete(code)
+                        Log.d(TAG, "Auth result OK, code received (${code.take(10)}...)")
+                        deferred.complete(NativeAuthResult.Success(code))
                     } else {
                         Log.e(TAG, "Auth result OK but no serverAuthCode")
-                        deferred.complete(null)
+                        println("[GoogleDriveAuthHelper] consent OK but serverAuthCode=null — Web client ID may be misconfigured")
+                        deferred.complete(NativeAuthResult.Failed("Consent succeeded but no serverAuthCode. Verify GOOGLE_CLIENT_ID is a Web OAuth client ID with offline access."))
                     }
+                } catch (e: ApiException) {
+                    Log.e(TAG, "Failed to parse auth result (ApiException)", e)
+                    val detail = describeAuthFailure(e)
+                    println("[GoogleDriveAuthHelper] parse auth result failed: $detail")
+                    deferred.complete(NativeAuthResult.Failed(detail))
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to parse auth result", e)
-                    deferred.complete(null)
+                    println("[GoogleDriveAuthHelper] parse auth result failed: ${e.javaClass.simpleName}: ${e.message}")
+                    deferred.complete(NativeAuthResult.Failed("Failed to parse auth result: ${e.message}"))
                 }
             } else {
-                deferred.complete(null)
+                Log.e(TAG, "Auth result OK but activity=${currentActivity != null}, data=${data != null}")
+                deferred.complete(NativeAuthResult.Failed("Auth result OK but missing activity/data"))
             }
         } else {
-            Log.d(TAG, "Auth cancelled or failed, resultCode=$resultCode")
-            deferred.complete(null)
+            // RESULT_CANCELED or RESULT_FIRST_USER — the user dismissed the consent sheet
+            Log.d(TAG, "Auth cancelled, resultCode=$resultCode")
+            deferred.complete(NativeAuthResult.Cancelled)
         }
+    }
+
+    private fun describeAuthFailure(e: Throwable): String {
+        if (e is ApiException) {
+            val code = e.statusCode
+            val hint = when (code) {
+                10 -> " — DEVELOPER_ERROR: the OAuth client is misconfigured. Make sure your Google Cloud project has an Android OAuth client registered with the app package name (com.romreviewertools.noteitup) and the SHA-1 of the signing certificate, AND that GOOGLE_CLIENT_ID in local.properties is the Web OAuth client ID."
+                16 -> " — CANCELED by the system"
+                7 -> " — NETWORK_ERROR"
+                17 -> " — API_NOT_CONNECTED: Google Play Services unavailable"
+                else -> ""
+            }
+            return "ApiException statusCode=$code${hint} (${e.message ?: ""})"
+        }
+        return "${e.javaClass.simpleName}: ${e.message ?: "unknown"}"
     }
 }
