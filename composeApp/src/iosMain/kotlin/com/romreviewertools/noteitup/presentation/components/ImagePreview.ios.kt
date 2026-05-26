@@ -17,6 +17,9 @@ import kotlinx.cinterop.usePinned
 import org.jetbrains.skia.Image as SkiaImage
 import platform.Foundation.NSData
 import platform.Foundation.NSFileManager
+import platform.Foundation.NSURL
+import platform.Foundation.dataWithContentsOfURL
+import platform.posix.memcpy
 
 @Composable
 actual fun ImagePreview(
@@ -53,12 +56,12 @@ private fun loadImageBitmap(filePath: String): ImageBitmap? {
         }
 
         // Read file as NSData
-        val data = NSData.dataWithContentsOfFile(filePath) ?: return null
+        val data = NSData.dataWithContentsOfURL(NSURL.fileURLWithPath(filePath)) ?: return null
 
         // Convert NSData to ByteArray
         val bytes = ByteArray(data.length.toInt())
         bytes.usePinned { pinned ->
-            data.getBytes(pinned.addressOf(0))
+            memcpy(pinned.addressOf(0), data.bytes, data.length)
         }
 
         // Decode with Skia and convert to Compose ImageBitmap

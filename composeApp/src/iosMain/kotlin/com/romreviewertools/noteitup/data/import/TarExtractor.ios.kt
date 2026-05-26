@@ -199,4 +199,17 @@ actual class TarExtractor {
     private fun isEmptyBlock(block: ByteArray): Boolean {
         return block.all { it == 0.toByte() }
     }
+
+    actual fun readFileContent(path: String): String {
+        return try {
+            val data = NSData.dataWithContentsOfURL(NSURL.fileURLWithPath(path)) ?: return ""
+            val bytes = ByteArray(data.length.toInt())
+            bytes.usePinned { pinned ->
+                memcpy(pinned.addressOf(0), data.bytes, data.length)
+            }
+            bytes.decodeToString()
+        } catch (e: Exception) {
+            ""
+        }
+    }
 }

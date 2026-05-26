@@ -9,6 +9,7 @@ import com.romreviewertools.noteitup.data.repository.AISettingsRepository
 import com.romreviewertools.noteitup.domain.model.AIProvider
 import com.romreviewertools.noteitup.domain.repository.DiaryRepository
 import com.romreviewertools.noteitup.domain.usecase.ChatUseCase
+import kotlin.time.Clock
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -88,7 +89,7 @@ class BrainstormViewModel(
         analyticsService.logEvent(AnalyticsEvent.BrainstormMessageSent)
 
         viewModelScope.launch {
-            val userTimestamp = System.currentTimeMillis()
+            val userTimestamp = Clock.System.now().toEpochMilliseconds()
             val userMessageId = userTimestamp.toString()
 
             // Persist user message (Flow will update UI)
@@ -147,7 +148,7 @@ class BrainstormViewModel(
             }
 
             // Streaming complete — persist the final response
-            val assistantTimestamp = System.currentTimeMillis()
+            val assistantTimestamp = Clock.System.now().toEpochMilliseconds()
             diaryRepository.insertBrainstormMessage(
                 id = assistantTimestamp.toString(),
                 content = accumulated.trim(),
@@ -183,7 +184,7 @@ class BrainstormViewModel(
 
         result.fold(
             onSuccess = { response ->
-                val assistantTimestamp = System.currentTimeMillis()
+                val assistantTimestamp = Clock.System.now().toEpochMilliseconds()
                 diaryRepository.insertBrainstormMessage(
                     id = assistantTimestamp.toString(),
                     content = response,

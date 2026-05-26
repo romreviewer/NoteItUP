@@ -386,7 +386,7 @@ private fun ProviderCard(
                             modifier = Modifier.fillMaxWidth()
                         )
                         Text(
-                            text = "%.1f GB / %.1f GB used".format(usedGB, totalGB),
+                            text = "${(usedGB * 10).toInt() / 10.0} GB / ${(totalGB * 10).toInt() / 10.0} GB used",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.filled.FormatBold
 import androidx.compose.material.icons.filled.FormatColorText
 import androidx.compose.material.icons.filled.Redo
@@ -285,10 +284,12 @@ private fun FormatButton(
     contentDescription: String,
     isActive: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
 ) {
     IconButton(
         onClick = onClick,
+        enabled = enabled,
         modifier = modifier.size(40.dp),
         colors = IconButtonDefaults.iconButtonColors(
             containerColor = if (isActive) {
