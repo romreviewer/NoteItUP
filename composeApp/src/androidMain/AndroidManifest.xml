@@ -59,12 +59,19 @@
                     android:scheme="com.romreviewertools.noteitup"
                     android:host="oauth2callback" />
             </intent-filter>
+        </activity>
 
-            <!-- OAuth callback for Dropbox (db-APP_KEY format) -->
+        <!-- Dropbox SDK AuthActivity: handles the db-APP_KEY callback and exposes
+             the result via Auth.getDbxCredential() once we resume. -->
+        <activity
+            android:name="com.dropbox.core.android.AuthActivity"
+            android:configChanges="orientation|keyboard"
+            android:launchMode="singleTask"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
+                <category android:name="android.intent.category.DEFAULT" />
                 <data android:scheme="${dropboxScheme}" />
             </intent-filter>
         </activity>

@@ -76,6 +76,9 @@ kotlin {
             // Google Identity Services (native Google Sign-In for Drive OAuth)
             implementation(libs.play.services.auth)
 
+            // Dropbox Android SDK (native auth via Dropbox app or Chrome Custom Tabs)
+            implementation(libs.dropbox.android.sdk)
+
             // Local AI (LiteRT-LM)
             implementation(libs.litertlm.android)
 
@@ -163,8 +166,8 @@ android {
         applicationId = "com.romreviewertools.noteitup"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 13
-        versionName = "1.6.0"
+        versionCode = 14
+        versionName = "1.7.0"
 
         // API Keys from local.properties (gitignored)
         val dropboxAppKey = localProperties.getProperty("DROPBOX_APP_KEY", "")

@@ -59,6 +59,7 @@ class GoogleDriveProvider(
     }
 
     override suspend fun handleAuthCallback(code: String, redirectUri: String?): CloudResult<Unit> {
+        println("[GoogleDrive] handleAuthCallback: code=${code.take(10)}..., redirectUri=$redirectUri")
         return try {
             val response: HttpResponse = httpClient.submitForm(
                 url = TOKEN_URL,
@@ -74,6 +75,7 @@ class GoogleDriveProvider(
                 }
             )
 
+            println("[GoogleDrive] token exchange response: ${response.status}")
             if (response.status.isSuccess()) {
                 val tokenResponse: TokenResponse = json.decodeFromString(response.bodyAsText())
                 cloudSyncRepository.saveTokens(
@@ -82,11 +84,15 @@ class GoogleDriveProvider(
                     refreshToken = tokenResponse.refreshToken,
                     expiresIn = tokenResponse.expiresIn
                 )
+                println("[GoogleDrive] token saved successfully, hasRefreshToken=${tokenResponse.refreshToken != null}")
                 CloudResult.Success(Unit)
             } else {
+                val errorBody = response.bodyAsText()
+                println("[GoogleDrive] token exchange failed, body: $errorBody")
                 CloudResult.Error("Failed to exchange code: ${response.status}", response.status.value)
             }
         } catch (e: Exception) {
+            println("[GoogleDrive] handleAuthCallback exception: ${e.message}")
             CloudResult.Error("Auth callback failed: ${e.message}")
         }
     }

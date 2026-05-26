@@ -1,6 +1,29 @@
 package com.romreviewertools.noteitup.data.cloud
 
 /**
+ * Result of a native (non-browser) cloud provider sign-in attempt.
+ * Non-supporting platforms always return [Unsupported].
+ */
+sealed class NativeAuthResult {
+    /** Returned an auth code that still needs to be exchanged for tokens. */
+    data class Success(val code: String) : NativeAuthResult()
+
+    /**
+     * Returned tokens directly, skipping the auth-code exchange step.
+     * Used by SDKs (e.g. Dropbox) that handle the OAuth handshake internally.
+     */
+    data class SuccessTokens(
+        val accessToken: String,
+        val refreshToken: String?,
+        val expiresIn: Long
+    ) : NativeAuthResult()
+
+    object Cancelled : NativeAuthResult()
+    data class Failed(val message: String) : NativeAuthResult()
+    object Unsupported : NativeAuthResult()
+}
+
+/**
  * Platform-specific OAuth handler for cloud provider authentication.
  * Uses browser-based OAuth flow on each platform.
  */
@@ -19,8 +42,14 @@ expect class OAuthHandler {
 
     /**
      * Attempts native Google Sign-In (Android only).
-     * Returns a server auth code on success, or null if unavailable/cancelled.
-     * Non-Android platforms return null to fall through to browser flow.
+     * Non-Android platforms return [NativeAuthResult.Unsupported] so the caller
+     * can fall through to the browser flow.
      */
-    suspend fun startNativeGoogleAuth(): String?
+    suspend fun startNativeGoogleAuth(): NativeAuthResult
+
+    /**
+     * Starts the Dropbox SDK auth flow on Android (uses the Dropbox app if installed,
+     * Chrome Custom Tabs otherwise). Non-Android platforms return [NativeAuthResult.Unsupported].
+     */
+    suspend fun startNativeDropboxAuth(): NativeAuthResult
 }

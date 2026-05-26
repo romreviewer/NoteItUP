@@ -23,5 +23,7 @@ actual class OAuthHandler {
         }
     }
 
-    actual suspend fun startNativeGoogleAuth(): String? = null
+    actual suspend fun startNativeGoogleAuth(): NativeAuthResult = NativeAuthResult.Unsupported
+
+    actual suspend fun startNativeDropboxAuth(): NativeAuthResult = NativeAuthResult.Unsupported
 }

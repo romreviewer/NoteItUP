@@ -7,6 +7,7 @@ import com.romreviewertools.noteitup.data.analytics.AnalyticsService
 import com.romreviewertools.noteitup.data.cloud.CloudProviderType
 import com.romreviewertools.noteitup.data.cloud.CloudResult
 import com.romreviewertools.noteitup.data.cloud.CloudSyncManager
+import com.romreviewertools.noteitup.data.cloud.NativeAuthResult
 import com.romreviewertools.noteitup.data.cloud.OAuthHandler
 import com.romreviewertools.noteitup.data.cloud.SyncState
 import com.romreviewertools.noteitup.domain.repository.CloudSyncRepository
@@ -112,33 +113,120 @@ class CloudSyncViewModel(
 
     private fun connectProvider(provider: CloudProviderType) {
         viewModelScope.launch {
+            println("[CloudSync] connectProvider: provider=$provider")
             try {
                 // For Google Drive, try native auth first (Android only)
                 if (provider == CloudProviderType.GOOGLE_DRIVE) {
-                    val nativeCode = oAuthHandler.startNativeGoogleAuth()
-                    if (nativeCode != null) {
-                        // Got auth code via native flow — exchange without redirect_uri
-                        handleOAuthCallback(provider, nativeCode, redirectUri = "native")
-                        return@launch
+                    val nativeResult = oAuthHandler.startNativeGoogleAuth()
+                    println("[CloudSync] native auth result: $nativeResult")
+                    when (nativeResult) {
+                        is NativeAuthResult.Success -> {
+                            // Got auth code via native flow — exchange without redirect_uri
+                            handleOAuthCallback(provider, nativeResult.code, redirectUri = "native")
+                            return@launch
+                        }
+                        is NativeAuthResult.SuccessTokens -> {
+                            // Google native flow never returns SuccessTokens, but handle for completeness.
+                            saveNativeTokensAndFinish(provider, nativeResult)
+                            return@launch
+                        }
+                        is NativeAuthResult.Cancelled -> {
+                            val redirectUri = oAuthHandler.getRedirectUri(provider)
+                            if (!redirectUri.startsWith("http")) {
+                                println("[CloudSync] user cancelled native auth on Android")
+                                _uiState.update { it.copy(errorMessage = "Google sign-in was cancelled. Please try again.") }
+                                return@launch
+                            }
+                            // iOS/JVM with http-based redirect — fall through to browser
+                        }
+                        is NativeAuthResult.Failed -> {
+                            val redirectUri = oAuthHandler.getRedirectUri(provider)
+                            if (!redirectUri.startsWith("http")) {
+                                println("[CloudSync] native auth failed on Android: ${nativeResult.message}")
+                                _uiState.update { it.copy(errorMessage = "Google sign-in failed: ${nativeResult.message}") }
+                                return@launch
+                            }
+                            // iOS/JVM with http-based redirect — fall through to browser
+                        }
+                        is NativeAuthResult.Unsupported -> {
+                            // iOS/JVM — fall through to browser flow
+                        }
                     }
-                    // On Android, native auth returned null = cancelled/failed.
-                    // Android uses custom scheme redirect which Google blocks, so don't fall through.
-                    val redirectUri = oAuthHandler.getRedirectUri(provider)
-                    if (!redirectUri.startsWith("http")) {
-                        _uiState.update { it.copy(errorMessage = "Google sign-in was cancelled. Please try again.") }
-                        return@launch
+                }
+
+                // For Dropbox, try native SDK auth first (Android only)
+                if (provider == CloudProviderType.DROPBOX) {
+                    val nativeResult = oAuthHandler.startNativeDropboxAuth()
+                    println("[CloudSync] dropbox native auth result: $nativeResult")
+                    when (nativeResult) {
+                        is NativeAuthResult.SuccessTokens -> {
+                            saveNativeTokensAndFinish(provider, nativeResult)
+                            return@launch
+                        }
+                        is NativeAuthResult.Success -> {
+                            // SDK flow doesn't return raw auth codes, but handle defensively.
+                            handleOAuthCallback(provider, nativeResult.code)
+                            return@launch
+                        }
+                        is NativeAuthResult.Cancelled -> {
+                            println("[CloudSync] user cancelled native Dropbox auth")
+                            _uiState.update { it.copy(errorMessage = "Dropbox sign-in was cancelled.") }
+                            return@launch
+                        }
+                        is NativeAuthResult.Failed -> {
+                            println("[CloudSync] native Dropbox auth failed: ${nativeResult.message}")
+                            _uiState.update { it.copy(errorMessage = "Dropbox sign-in failed: ${nativeResult.message}") }
+                            return@launch
+                        }
+                        is NativeAuthResult.Unsupported -> {
+                            // iOS/JVM — fall through to browser flow
+                        }
                     }
-                    // On iOS/JVM (http-based redirect), fall through to browser flow
                 }
                 val authUrl = cloudSyncManager.startOAuthFlow(provider)
+                println("[CloudSync] opening auth URL: ${authUrl.take(80)}...")
                 oAuthHandler.openAuthUrl(authUrl)
             } catch (e: Exception) {
+                println("[CloudSync] connectProvider error: ${e.message}")
                 _uiState.update { it.copy(errorMessage = "Failed to start authentication: ${e.message}") }
             }
         }
     }
 
+    private suspend fun saveNativeTokensAndFinish(
+        provider: CloudProviderType,
+        tokens: NativeAuthResult.SuccessTokens
+    ) {
+        _uiState.update { it.copy(isAuthenticating = true, authenticatingProvider = provider) }
+        try {
+            cloudSyncRepository.saveTokens(
+                provider = provider,
+                accessToken = tokens.accessToken,
+                refreshToken = tokens.refreshToken,
+                expiresIn = tokens.expiresIn
+            )
+            _uiState.update {
+                it.copy(
+                    isAuthenticating = false,
+                    authenticatingProvider = null,
+                    successMessage = "Connected to ${provider.name.replace("_", " ")}"
+                )
+            }
+            refreshQuota()
+        } catch (e: Exception) {
+            println("[CloudSync] saveNativeTokens error: ${e.message}")
+            _uiState.update {
+                it.copy(
+                    isAuthenticating = false,
+                    authenticatingProvider = null,
+                    errorMessage = "Failed to save credentials: ${e.message}"
+                )
+            }
+        }
+    }
+
     private fun handleOAuthCallback(provider: CloudProviderType, code: String, redirectUri: String? = null) {
+        println("[CloudSync] handleOAuthCallback: provider=$provider, code=${code.take(10)}..., redirectUri=$redirectUri")
         viewModelScope.launch {
             // Show loading state
             _uiState.update { it.copy(
@@ -147,7 +235,9 @@ class CloudSyncViewModel(
             ) }
 
             try {
-                when (val result = cloudSyncManager.handleOAuthCallback(provider, code, redirectUri)) {
+                val result = cloudSyncManager.handleOAuthCallback(provider, code, redirectUri)
+                println("[CloudSync] token exchange result: $result")
+                when (result) {
                     is CloudResult.Success -> {
                         _uiState.update { it.copy(
                             isAuthenticating = false,
@@ -172,6 +262,7 @@ class CloudSyncViewModel(
                     }
                 }
             } catch (e: Exception) {
+                println("[CloudSync] handleOAuthCallback error: ${e.message}")
                 _uiState.update { it.copy(
                     isAuthenticating = false,
                     authenticatingProvider = null,
