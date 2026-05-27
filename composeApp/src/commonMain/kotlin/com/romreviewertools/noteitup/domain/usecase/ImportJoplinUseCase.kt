@@ -38,7 +38,7 @@ class ImportJoplinUseCase(
                 try {
                     // Only read JSON files
                     if (filename.endsWith(".json") || filename.endsWith(".md")) {
-                        val content = readFileContent(filePath)
+                        val content = tarExtractor.readFileContent(filePath)
                         fileContents[filename] = content
                     }
                 } catch (e: Exception) {
@@ -80,15 +80,6 @@ class ImportJoplinUseCase(
      * Reads file content as string.
      * Platform-specific implementation should handle file I/O.
      */
-    private fun readFileContent(filePath: String): String {
-        // This is a simplified implementation - in practice, you'd use platform-specific file reading
-        return try {
-            java.io.File(filePath).readText()
-        } catch (e: Exception) {
-            ""
-        }
-    }
-
     private suspend fun importExportData(
         exportData: ExportData,
         extractedImages: Map<String, String>,

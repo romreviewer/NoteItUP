@@ -23,7 +23,7 @@ actual class LocationService {
 
     private val locationManager = CLLocationManager()
     private val geocoder = CLGeocoder()
-    private var locationDelegate: LocationDelegate? = null
+    private var locationDelegate: NSObject? = null
 
     actual fun getPermissionStatus(): LocationPermissionStatus {
         return when (CLLocationManager.authorizationStatus()) {

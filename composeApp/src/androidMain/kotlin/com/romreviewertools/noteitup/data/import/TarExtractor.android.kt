@@ -37,4 +37,7 @@ actual class TarExtractor {
             fileMap
         }
     }
+
+    actual fun readFileContent(path: String): String =
+        runCatching { File(path).readText() }.getOrDefault("")
 }

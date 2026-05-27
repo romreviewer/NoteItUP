@@ -16,8 +16,8 @@ actual fun MediaPermissionHandler(
     // iOS handles permissions differently through the native layer
     // For now, these are stubs - iOS implementation would need native integration
     content(
-        launchGallery = { onImagePickCancelled() },
-        launchCamera = { onImagePickCancelled() },
-        launchLocationPermission = { onLocationPermissionResult(false) }
+        { onImagePickCancelled() },
+        { onImagePickCancelled() },
+        { onLocationPermissionResult(false) }
     )
 }

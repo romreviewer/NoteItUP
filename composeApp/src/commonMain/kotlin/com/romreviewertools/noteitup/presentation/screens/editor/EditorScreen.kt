@@ -125,9 +125,6 @@ fun EditorScreen(
     // Unsaved changes dialog state
     var showUnsavedChangesDialog by remember { mutableStateOf(false) }
 
-    // Track if title field is focused (to keep it visible when editing in landscape)
-    var isTitleFocused by remember { mutableStateOf(false) }
-
     // Keyboard visibility detection
     val density = LocalDensity.current
     val isKeyboardOpen = WindowInsets.ime.getBottom(density) > 0
@@ -312,43 +309,6 @@ fun EditorScreen(
                                 ) else Modifier
                             )
                     ) {
-                        // Title field - hide when keyboard is open and editing content (unless title is focused)
-                        if (!isKeyboardOpen || isTitleFocused) {
-                            BasicTextField(
-                                value = uiState.title,
-                                onValueChange = {
-                                    viewModel.processIntent(
-                                        EditorIntent.UpdateTitle(it)
-                                    )
-                                },
-                                textStyle = MaterialTheme.typography.headlineMedium.copy(
-                                    color = MaterialTheme.colorScheme.onSurface
-                                ),
-                                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .onFocusChanged { focusState ->
-                                        isTitleFocused = focusState.isFocused
-                                    },
-                                decorationBox = { innerTextField ->
-                                    Box {
-                                        if (uiState.title.isEmpty()) {
-                                            Text(
-                                                text = "Title",
-                                                style = MaterialTheme.typography.headlineMedium,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
-                                                    alpha = 0.6f
-                                                )
-                                            )
-                                        }
-                                        innerTextField()
-                                    }
-                                }
-                            )
-
-                            Spacer(modifier = Modifier.height(8.dp))
-                        }
-
                         // Rich text formatting toolbar - hide in landscape with keyboard
                         if (!isLandscape || !isKeyboardOpen) {
                             RichTextToolbar(
