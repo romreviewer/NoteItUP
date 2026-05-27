@@ -39,7 +39,6 @@ import com.romreviewertools.noteitup.presentation.screens.brainstorm.BrainstormV
 import com.romreviewertools.noteitup.data.review.InAppReviewManager
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
-import kotlin.system.exitProcess
 
 @Composable
 fun AppNavigation(
@@ -93,9 +92,7 @@ fun AppNavigation(
                 onAISettingsClick = {
                     navController.navigate(Routes.AISettings)
                 },
-                onExitApp = {
-                    exitProcess(0)
-                }
+                onExitApp = {}
             )
         }
 

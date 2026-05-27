@@ -2,6 +2,7 @@ package com.romreviewertools.noteitup.data.media
 
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.addressOf
+import kotlinx.cinterop.useContents
 import kotlinx.cinterop.usePinned
 import kotlinx.coroutines.suspendCancellableCoroutine
 import platform.CoreGraphics.CGSizeMake
@@ -90,8 +91,7 @@ actual class ImagePicker {
         val image = UIImage.imageWithContentsOfFile(imagePath)
             ?: throw Exception("Failed to load image")
 
-        val originalWidth = image.size.width
-        val originalHeight = image.size.height
+        val (originalWidth, originalHeight) = image.size.useContents { width to height }
 
         val ratio = minOf(maxSize.toDouble() / originalWidth, maxSize.toDouble() / originalHeight)
         val newWidth = originalWidth * ratio

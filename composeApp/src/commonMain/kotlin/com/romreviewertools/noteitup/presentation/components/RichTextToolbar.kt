@@ -13,9 +13,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.filled.FormatBold
 import androidx.compose.material.icons.filled.FormatColorText
+import androidx.compose.material.icons.filled.Redo
+import androidx.compose.material.icons.filled.Undo
 import androidx.compose.material.icons.filled.FormatItalic
 import androidx.compose.material.icons.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.FormatListNumbered
@@ -54,6 +55,24 @@ fun RichTextToolbar(
             .padding(vertical = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
+        // Undo
+        FormatButton(
+            icon = Icons.Default.Undo,
+            contentDescription = "Undo",
+            isActive = false,
+            enabled = richTextState.history.canUndo,
+            onClick = { richTextState.history.undo() }
+        )
+
+        // Redo
+        FormatButton(
+            icon = Icons.Default.Redo,
+            contentDescription = "Redo",
+            isActive = false,
+            enabled = richTextState.history.canRedo,
+            onClick = { richTextState.history.redo() }
+        )
+
         // Bold
         FormatButton(
             icon = Icons.Default.FormatBold,
@@ -265,10 +284,12 @@ private fun FormatButton(
     contentDescription: String,
     isActive: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
 ) {
     IconButton(
         onClick = onClick,
+        enabled = enabled,
         modifier = modifier.size(40.dp),
         colors = IconButtonDefaults.iconButtonColors(
             containerColor = if (isActive) {

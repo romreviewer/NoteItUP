@@ -1,5 +1,6 @@
 package com.romreviewertools.noteitup.data.export
 
+import kotlin.time.Clock
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.usePinned
@@ -10,6 +11,7 @@ import platform.Foundation.NSData
 import platform.Foundation.NSError
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSURL
+import platform.Foundation.NSTemporaryDirectory
 import platform.Foundation.create
 import platform.Foundation.dataWithContentsOfURL
 import platform.Foundation.writeToURL
@@ -26,13 +28,13 @@ actual class ZipExporter {
             val fileManager = NSFileManager.defaultManager
 
             // Create temporary directory for files to zip
-            val tempDir = "${NSFileManager.defaultManager.temporaryDirectory.path!!}/zip_temp_${System.currentTimeMillis()}"
+            val tempDir = "${NSTemporaryDirectory()}zip_temp_${Clock.System.now().toEpochMilliseconds()}"
             fileManager.createDirectoryAtPath(tempDir, true, null, null)
 
             try {
                 // Write JSON file
                 val jsonPath = "$tempDir/data.json"
-                val jsonData = jsonContent.toByteArray(Charsets.UTF_8)
+                val jsonData = jsonContent.encodeToByteArray()
                 jsonData.usePinned { pinned ->
                     val nsData = NSData.create(bytes = pinned.addressOf(0), length = jsonData.size.toULong())
                     nsData?.writeToURL(NSURL.fileURLWithPath(jsonPath), true)
@@ -83,7 +85,7 @@ actual class ZipExporter {
             val fileManager = NSFileManager.defaultManager
 
             // Create temporary extraction directory
-            val tempDir = "${NSFileManager.defaultManager.temporaryDirectory.path!!}/unzip_temp_${System.currentTimeMillis()}"
+            val tempDir = "${NSTemporaryDirectory()}unzip_temp_${Clock.System.now().toEpochMilliseconds()}"
             fileManager.createDirectoryAtPath(tempDir, true, null, null)
 
             try {
@@ -99,7 +101,7 @@ actual class ZipExporter {
                 jsonBytes.usePinned { pinned ->
                     memcpy(pinned.addressOf(0), jsonData.bytes, jsonData.length)
                 }
-                val jsonContent = jsonBytes.toString(Charsets.UTF_8)
+                val jsonContent = jsonBytes.decodeToString()
 
                 // Copy images to output directory
                 val imageMap = mutableMapOf<String, String>()

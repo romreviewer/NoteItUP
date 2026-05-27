@@ -5,7 +5,6 @@ import com.romreviewertools.noteitup.domain.model.Mood
 
 sealed interface EditorIntent {
     data class LoadEntry(val entryId: String) : EditorIntent
-    data class UpdateTitle(val title: String) : EditorIntent
     data class UpdateContent(val content: String) : EditorIntent
     data class UpdateMood(val mood: Mood?) : EditorIntent
     data class ToggleTag(val tagId: String) : EditorIntent

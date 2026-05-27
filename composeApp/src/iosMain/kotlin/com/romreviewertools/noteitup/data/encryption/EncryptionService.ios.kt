@@ -30,24 +30,22 @@ actual class EncryptionService {
         val passwordBytes = password.encodeToByteArray()
 
         memScoped {
-            passwordBytes.usePinned { passwordPinned ->
-                salt.usePinned { saltPinned ->
-                    derivedKey.usePinned { keyPinned ->
-                        val result = CCKeyDerivationPBKDF(
-                            algorithm = kCCPBKDF2,
-                            password = passwordPinned.addressOf(0).reinterpret(),
-                            passwordLen = passwordBytes.size.toULong(),
-                            salt = saltPinned.addressOf(0).reinterpret(),
-                            saltLen = salt.size.toULong(),
-                            prf = kCCPRFHmacAlgSHA256,
-                            rounds = PBKDF2_ITERATIONS.toUInt(),
-                            derivedKey = keyPinned.addressOf(0).reinterpret(),
-                            derivedKeyLen = KEY_LENGTH_BYTES.toULong()
-                        )
+            salt.usePinned { saltPinned ->
+                derivedKey.usePinned { keyPinned ->
+                    val result = CCKeyDerivationPBKDF(
+                        algorithm = kCCPBKDF2,
+                        password = password,
+                        passwordLen = passwordBytes.size.toULong(),
+                        salt = saltPinned.addressOf(0).reinterpret(),
+                        saltLen = salt.size.toULong(),
+                        prf = kCCPRFHmacAlgSHA256,
+                        rounds = PBKDF2_ITERATIONS.toUInt(),
+                        derivedKey = keyPinned.addressOf(0).reinterpret(),
+                        derivedKeyLen = KEY_LENGTH_BYTES.toULong()
+                    )
 
-                        if (result != kCCSuccess) {
-                            throw IllegalStateException("Key derivation failed: $result")
-                        }
+                    if (result != kCCSuccess) {
+                        throw IllegalStateException("Key derivation failed: $result")
                     }
                 }
             }
@@ -77,12 +75,12 @@ actual class EncryptionService {
                                 op = kCCEncrypt,
                                 alg = kCCAlgorithmAES,
                                 options = kCCOptionPKCS7Padding.toUInt(),
-                                key = keyPinned.addressOf(0).reinterpret(),
+                                key = keyPinned.addressOf(0),
                                 keyLength = key.size.toULong(),
-                                iv = ivPinned.addressOf(0).reinterpret(),
-                                dataIn = dataPinned.addressOf(0).reinterpret(),
+                                iv = ivPinned.addressOf(0),
+                                dataIn = dataPinned.addressOf(0),
                                 dataInLength = paddedData.size.toULong(),
-                                dataOut = ciphertextPinned.addressOf(0).reinterpret(),
+                                dataOut = ciphertextPinned.addressOf(0),
                                 dataOutAvailable = ciphertext.size.toULong(),
                                 dataOutMoved = numBytesEncrypted.ptr
                             )
@@ -119,12 +117,12 @@ actual class EncryptionService {
                                 op = kCCDecrypt,
                                 alg = kCCAlgorithmAES,
                                 options = kCCOptionPKCS7Padding.toUInt(),
-                                key = keyPinned.addressOf(0).reinterpret(),
+                                key = keyPinned.addressOf(0),
                                 keyLength = key.size.toULong(),
-                                iv = ivPinned.addressOf(0).reinterpret(),
-                                dataIn = ciphertextPinned.addressOf(0).reinterpret(),
+                                iv = ivPinned.addressOf(0),
+                                dataIn = ciphertextPinned.addressOf(0),
                                 dataInLength = ciphertext.size.toULong(),
-                                dataOut = decryptedPinned.addressOf(0).reinterpret(),
+                                dataOut = decryptedPinned.addressOf(0),
                                 dataOutAvailable = decrypted.size.toULong(),
                                 dataOutMoved = numBytesDecrypted.ptr
                             )

@@ -15,4 +15,7 @@ expect class TarExtractor {
         tarPath: String,
         outputDir: String
     ): Result<Map<String, String>>
+
+    /** Reads a file from the local filesystem as a UTF-8 string. */
+    fun readFileContent(path: String): String
 }
