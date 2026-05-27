@@ -166,8 +166,8 @@ android {
         applicationId = "com.romreviewertools.noteitup"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 14
-        versionName = "1.7.0"
+        versionCode = 15
+        versionName = "1.8.0"
 
         // API Keys from local.properties (gitignored)
         val dropboxAppKey = localProperties.getProperty("DROPBOX_APP_KEY", "")
