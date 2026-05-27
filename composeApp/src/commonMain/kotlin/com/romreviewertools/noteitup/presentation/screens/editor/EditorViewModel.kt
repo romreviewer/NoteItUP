@@ -120,11 +120,29 @@ class EditorViewModel(
                     originalFolderId = entry.folderId
                     originalImages = entry.images
                     originalLocation = entry.location
+
+                    // Backward compat: old builds stored title separately from content.
+                    // If the stored title isn't already the first line of content, prepend it
+                    // so it's visible and editable in the new single-field editor.
+                    val storedTitle = entry.title.trim()
+                        .removePrefix("#").trim()
+                    val firstLineOfContent = entry.content.lines()
+                        .firstOrNull { it.isNotBlank() }?.trim() ?: ""
+                    val migratedContent = if (
+                        storedTitle.isNotBlank() &&
+                        storedTitle != "Untitled" &&
+                        storedTitle != firstLineOfContent
+                    ) {
+                        "$storedTitle\n${entry.content}"
+                    } else {
+                        entry.content
+                    }
+
                     _uiState.update {
                         it.copy(
                             isLoading = false,
                             entryId = entry.id,
-                            content = entry.content,
+                            content = migratedContent,
                             mood = entry.mood,
                             isFavorite = entry.isFavorite,
                             isNewEntry = false,
