@@ -1,5 +1,31 @@
 # Changelog
 
+## v1.7.0
+
+### New Features
+- **Day One–style Editor** — Title field removed; the first line of your note automatically becomes the title, keeping the writing experience clean and uninterrupted
+- **Day One–style List Cards** — Note cards now show the first line as the title and the remaining content as the preview, eliminating duplication
+- **Undo / Redo** — Full undo/redo history in the rich text toolbar
+- **Dropbox Native SDK Auth** — Dropbox sign-in uses the native SDK instead of a browser flow for a smoother experience
+
+### Improvements
+- Rich text editor upgraded to `richeditor-compose 1.0.0-rc14` with improved list behaviour, heading support, and copy/paste formatting preservation
+- Landscape mode editor now fills the full screen height (toolbar + writing area) without content being cut off
+- Backward compatibility: existing notes with a separately stored title automatically have it prepended to their content on first open, so nothing is lost
+
+---
+
+## v1.6.0
+
+### New Features
+- **readFileContent** — File content reading support added across platforms
+
+### Improvements
+- Multiple iOS UI fixes and stability improvements
+- Removed accidentally tracked Xcode user data; `.gitignore` updated
+
+---
+
 ## v1.5.0 (Build 11)
 
 ### New Features
